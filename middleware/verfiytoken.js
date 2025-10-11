@@ -4,20 +4,19 @@ import dotenv from "dotenv";
 dotenv.config();
 export const validateAccessToken = async (req, res, next) => {
   try {
-    //using cookie
-    const accessToken = req.cookies.accessToken;
+    const accessToken = req.headers.authorization.split(" ")[1];
     if (!accessToken) {
       return res.status(404).json({ message: "access token not found" });
     }
-    const access_secret_key = process.env.access_secret_key;
+    const access_secret_key = process.env.ACCESS_SECRET_KEY;
     const verifyAccessToken = jwt.verify(accessToken, access_secret_key);
 
     req.user = verifyAccessToken;
+    next();
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Invalid or expire token" });
   }
-  next();
 };
 
 export const validateRefreshToken = (req, res, next) => {
