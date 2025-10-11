@@ -49,10 +49,7 @@ export const registerUser = async (req, res) => {
       RETURNING id,email,created_at;
     `;
 
-    const userValues = [
-      email,
-      hashedPassword
-    ];
+    const userValues = [email, hashedPassword];
 
     const result = await pool.query(userQuery, userValues);
 
@@ -66,17 +63,24 @@ export const registerUser = async (req, res) => {
     VALUES ($1,$2,$3,$4,$5,$6)
     RETURNING id,user_id,full_name,marital_status,profession,interests,created_at`;
 
-    const profileValues = [user_id,full_name,marital_status,profession,JSON.stringify(interests),true];
-    const profileResult = await pool.query(profileQuery,profileValues);
+    const profileValues = [
+      user_id,
+      full_name,
+      marital_status,
+      profession,
+      JSON.stringify(interests),
+      true,
+    ];
+    const profileResult = await pool.query(profileQuery, profileValues);
 
     console.log(profileResult);
-    const user = {profile_info : profileResult.rows[0]};
+    const user = { profile_info: profileResult.rows[0] };
     user.email = result.rows[0].email;
 
     console.log(user);
     res.status(201).json({
       message: "User registered successfully!",
-      user
+      user,
     });
   } catch (error) {
     console.error("Error registering user:", error);
@@ -94,12 +98,12 @@ export async function loginUser(req, res) {
     }
 
     // Find user by email
-    const query = `
-      SELECT id, email, password, full_name, profession, marital_status, created_at
+    const userQuery = `
+      SELECT id, email, password
       FROM users
       WHERE email = $1
     `;
-    const { rows } = await pool.query(query, [email]);
+    const { rows } = await pool.query(userQuery, [email]);
 
     // If user not found
     if (rows.length === 0) {
@@ -114,13 +118,30 @@ export async function loginUser(req, res) {
       return res.status(401).json({ error: "Invalid Password" });
     }
 
+    const profileQuery = `SELECT id,full_name,phone,gender,marital_status
+                        address , profession, skills, interests, about, city
+                        FROM profiles WHERE user_id = $1`;
+
+    const result = await pool.query(profileQuery,[user.id]);     
+    
+    const user_profile = result.rows[0];
+
+    user_profile.email = user.email;
+
     // Create JWT payload
     const payload = {
-      id: user.id,
-      email: user.email,
-      full_name: user.full_name,
-      profession: user.profession,
-      marital_status: user.marital_status,
+      id: user_profile.id,
+      user_id: user_profile.user_id,
+      email: user_profile.email,
+      phone: user_profile.phone,
+      full_name: user_profile.full_name,
+      profession: user_profile.profession,
+      marital_status: user_profile.marital_status,
+      address: user_profile.address,
+      skills: user_profile.skills,
+      interests: user_profile.interests,
+      about: user_profile.about,
+      city: user_profile.city
     };
 
     // Generate tokens
@@ -147,17 +168,13 @@ export async function loginUser(req, res) {
       httpOnly: true,
     });
 
-    // Remove password hash before sending response
-    delete user.password;
-
     // Send success response
     return res.status(200).json({
       message: "Login successful",
-      user,
+      user_profile
     });
   } catch (err) {
     console.error("❌ loginUser error:", err);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 }
-
