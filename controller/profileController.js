@@ -3,7 +3,6 @@ import { pool } from "../config/db.js";
 export const updateProfile = async (req, res) => {
   try {
     const {
-      user_id,
       email,        // new email to update in users table
       full_name,
       phone,
@@ -17,19 +16,7 @@ export const updateProfile = async (req, res) => {
       city
     } = req.body;
 
-    // 1️⃣ Update users table
-    const updateUserQuery = `
-      UPDATE users
-      SET email = $1, updated_at = NOW()
-      WHERE id = $2
-      RETURNING *;
-    `;
-    const userValues = [email, user_id];
-    const userResult = await pool.query(updateUserQuery, userValues);
-
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    const {id} = req.user;
 
     // 2️⃣ Update profiles table
     const updateProfileQuery = `
@@ -47,7 +34,7 @@ export const updateProfile = async (req, res) => {
         city = $10,
         is_submitted = $11,
         updated_at = NOW()
-      WHERE user_id = $12
+      WHERE id = $12
       RETURNING *;
     `;
     const profileValues = [
@@ -62,12 +49,26 @@ export const updateProfile = async (req, res) => {
       about,
       city,
       true,
-      user_id
+      id
     ];
     const profileResult = await pool.query(updateProfileQuery, profileValues);
 
     if (profileResult.rows.length === 0) {
       return res.status(404).json({ message: 'Profile not found' });
+    }
+
+    // Update users table
+    const updateUserQuery = `
+      UPDATE users
+      SET email = $1, updated_at = NOW()
+      WHERE id = $2
+      RETURNING email;
+    `;
+    const userValues = [email, profileResult.rows[0].user_id];
+    const userResult = await pool.query(updateUserQuery, userValues);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
     res.status(200).json({

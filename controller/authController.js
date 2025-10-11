@@ -118,7 +118,7 @@ export async function loginUser(req, res) {
       return res.status(401).json({ error: "Invalid Password" });
     }
 
-    const profileQuery = `SELECT id,full_name,phone,gender,marital_status
+    const profileQuery = `SELECT id,full_name,phone,gender,marital_status,
                         address , profession, skills, interests, about, city
                         FROM profiles WHERE user_id = $1`;
 
@@ -156,22 +156,24 @@ export async function loginUser(req, res) {
     });
 
     // Set cookies
-    res.cookie("accessToken", accessToken, {
-      maxAge: 1000 * 60 * 15,
-      sameSite: "strict",
-      httpOnly: true,
-    });
+    // res.cookie("accessToken", accessToken, {
+    //   maxAge: 1000 * 60 * 15,
+    //   sameSite: "strict",
+    //   httpOnly: true,
+    // });
 
-    res.cookie("refreshToken", refreshToken, {
-      maxAge: 1000 * 60 * 60 * 24 * 7,
-      sameSite: "strict",
-      httpOnly: true,
-    });
+    // res.cookie("refreshToken", refreshToken, {
+    //   maxAge: 1000 * 60 * 60 * 24 * 7,
+    //   sameSite: "strict",
+    //   httpOnly: true,
+    // });
 
     // Send success response
     return res.status(200).json({
       message: "Login successful",
-      user_profile
+      user_profile,
+      accessToken,
+      refreshToken
     });
   } catch (err) {
     console.error("❌ loginUser error:", err);
