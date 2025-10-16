@@ -5,7 +5,7 @@ import authRoutes from "./routes/authRoutes.js"
 import { testConnection } from "./config/db.js";
 import cookieParser from "cookie-parser";
 import profileRoutes from "./routes/profileRoutes.js";
-
+import adminRoutes from "./routes/adminRoutes.js"
 const app = express();
 dotenv.config();
 
@@ -17,6 +17,8 @@ app.use(cookieParser());
 
 app.use("/",authRoutes);
 app.use("/",profileRoutes);
+app.use("/",adminRoutes)
+
 
 
 const port = process.env.PORT;

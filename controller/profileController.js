@@ -5,7 +5,13 @@ export const updateProfile = async (req, res) => {
     const {
       email,        // new email to update in users table
       full_name,
+      headline,
       phone,
+      dob,
+      age,
+      education,
+      company,
+      experience,
       gender,
       marital_status,
       address,
@@ -17,40 +23,53 @@ export const updateProfile = async (req, res) => {
     } = req.body;
 
     const {id} = req.user;
+     console.log("user:- ", req.user);
+      console.log("re.body: ", req.body);
 
     // 2️⃣ Update profiles table
     const updateProfileQuery = `
-      UPDATE profiles
-      SET 
-        full_name = $1,
-        phone = $2,
-        gender = $3,
-        marital_status = $4,
-        address = $5,
-        profession = $6,
-        skills = $7,
-        interests = $8,
-        about = $9,
-        city = $10,
-        is_submitted = $11,
-        updated_at = NOW()
-      WHERE id = $12
-      RETURNING *;
-    `;
-    const profileValues = [
-      full_name,
-      phone,
-      gender,
-      marital_status,
-      address,
-      profession,
-      JSON.stringify(skills),
-      JSON.stringify(interests),
-      about,
-      city,
-      true,
-      id
-    ];
+  UPDATE profiles
+  SET 
+    full_name = $1,
+    phone = $2,
+    gender = $3,
+    marital_status = $4,
+    address = $5,
+    profession = $6,
+    skills = $7,
+    interests = $8,
+    about = $9,
+    city = $10,
+    headline = $11,
+    dob = $12,
+    age = $13,
+    education = $14,
+    company = $15,
+    experience = $16,
+    updated_at = NOW(),
+    is_submitted = true
+  WHERE id = $17
+  RETURNING *;
+`;
+const profileValues = [
+  full_name,
+  phone,
+  gender,
+  marital_status,
+  address,
+  profession,
+  JSON.stringify(skills),
+  JSON.stringify(interests),
+  about,
+  city,
+  headline,
+  dob,
+  age,
+  education,
+  company,
+  experience,
+  id
+];
     const profileResult = await pool.query(updateProfileQuery, profileValues);
 
     if (profileResult.rows.length === 0) {

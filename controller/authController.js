@@ -2,7 +2,7 @@ import { pool } from "../config/db.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
-
+import { transporter } from "../mailer.js";
 dotenv.config();
 
 export const registerUser = async (req, res) => {
@@ -21,10 +21,8 @@ export const registerUser = async (req, res) => {
       !full_name ||
       !email ||
       !password ||
-      !profession ||
-      !interests ||
-      !marital_status
-    ) {
+      !profession
+       ) {
       return res
         .status(400)
         .json({ error: "Please fill all required fields." });
@@ -180,3 +178,61 @@ export async function loginUser(req, res) {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 }
+
+
+
+
+
+export const forgotPassword=async (req, res) => {
+   try {
+    const { email } = req.body;
+    const user = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+
+    if (!user.rows.length) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // generate reset token (valid for 15 mins)
+    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "15m" });
+
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Password Reset Request",
+      html: `
+        <p>You requested to reset your password.</p>
+        <p>Click below link to reset your password (valid for 15 minutes):</p>
+        <a href="${resetLink}" target="_blank">${resetLink}</a>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({ message: "Password reset link sent to your email." });
+  } catch (error) {
+    console.error("Error sending reset link:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const resetPassword=async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const email = decoded.email;
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await pool.query("UPDATE users SET password = $1 WHERE email = $2", [hashedPassword, email]);
+
+    res.json({ message: "Password reset successful." });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(400).json({ error: "Invalid or expired token." });
+  }
+};
+
