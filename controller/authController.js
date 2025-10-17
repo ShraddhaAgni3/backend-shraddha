@@ -1,189 +1,3 @@
-// import { pool } from "../config/db.js";
-// import jwt from "jsonwebtoken";
-// import dotenv from "dotenv";
-// import bcrypt from "bcrypt";
-// import { transporter } from "../mailer.js";
-// dotenv.config();
-
-// export const registerUser = async (req, res) => {
-//   try {
-//     const {
-//       full_name,
-//       email,
-//       password,
-//       profession,
-//       interests,
-//       marital_status,
-//     } = req.body;
-
-//     // Basic validation
-//     if (
-//       !full_name ||
-//       !email ||
-//       !password ||
-//       !profession
-//        ) {
-//       return res
-//         .status(400)
-//         .json({ error: "Please fill all required fields." });
-//     }
-
-//     // Check if user already exists
-//     const existingUser = await pool.query(
-//       "SELECT * FROM users WHERE email = $1",
-//       [email]
-//     );
-//     if (existingUser.rows.length > 0) {
-//       return res.status(400).json({ error: "User already exists." });
-//     }
-
-//     // Hash password
-//     const hashedPassword = await bcrypt.hash(password, 10);
-
-//     // Insert user
-//     const userQuery = `
-//       INSERT INTO users (email, password)
-//       VALUES ($1, $2)
-//       RETURNING id,email,created_at;
-//     `;
-
-//     const userValues = [email, hashedPassword];
-
-//     const result = await pool.query(userQuery, userValues);
-
-//     console.log(result);
-
-//     const user_id = result.rows[0].id;
-
-//     const profileQuery = `INSERT INTO profiles (
-//     user_id,full_name,marital_status,
-//     profession,interests,is_submitted) 
-//     VALUES ($1,$2,$3,$4,$5,$6)
-//     RETURNING id,user_id,full_name,marital_status,profession,interests,created_at`;
-
-//     const profileValues = [
-//       user_id,
-//       full_name,
-//       marital_status,
-//       profession,
-//       JSON.stringify(interests),
-//       true,
-//     ];
-//     const profileResult = await pool.query(profileQuery, profileValues);
-
-//     //profileResult.Result.row[0]
-//     const user = { profile_info: profileResult.rows[0] };
-//     user.email = result.rows[0].email;
-
-//     // Generate tokens
-//     const access_secret_key = process.env.ACCESS_SECRET_KEY;
-//     const refresh_secret_key = process.env.REFRESH_SECRET_KEY;
-
-//     const accessToken = jwt.sign(payload, access_secret_key, {
-//       expiresIn: "15m",
-//     });
-//     const refreshToken = jwt.sign(payload, refresh_secret_key, {
-//       expiresIn: "7d",
-//     });
-
-//     console.log(user);
-//     res.status(201).json({
-//       message: "User registered successfully!",
-//       user,
-//       accessToken,
-//       refreshToken
-//     });
-//   } catch (error) {
-//     console.error("Error registering user:", error);
-//     res.status(500).json({ error: "Internal server error." });
-//   }
-// };
-
-// export async function loginUser(req, res) {
-//   try {
-//     const { email, password } = req.body;
-
-//     // Basic validation
-//     if (!email || !password) {
-//       return res.status(400).json({ error: "Email and password are required" });
-//     }
-
-//     // Find user by email
-//     const userQuery = `
-//       SELECT id, email, password
-//       FROM users
-//       WHERE email = $1
-//     `;
-//     const { rows } = await pool.query(userQuery, [email]);
-
-//     // If user not found
-//     if (rows.length === 0) {
-//       return res.status(401).json({ error: "Invalid email" });
-//     }
-
-//     const user = rows[0];
-
-//     // ✅ Compare entered password with hashed password
-//     const isMatch = await bcrypt.compare(password, user.password);
-//     if (!isMatch) {
-//       return res.status(401).json({ error: "Invalid Password" });
-//     }
-
-//     // const profileQuery = `SELECT id,full_name,phone,gender,marital_status,
-//     //                     address , profession, skills, interests, about, city
-//     //                     FROM profiles WHERE user_id = $1`;
-//     const profileQuery = `SELECT id,full_name,gender,marital_status,
-//                         address , profession, skills, interests, about, city
-//                         FROM profiles WHERE user_id = $1`;
-
-//     const result = await pool.query(profileQuery,[user.id]);     
-    
-//     const user_profile = result.rows[0];
-
-//     user_profile.email = user.email;
-
-//     // Create JWT payload
-//     const payload = {
-//       id: user_profile.id,
-//       user_id: user_profile.user_id,
-//       email: user_profile.email,
-//      // phone: user_profile.phone,
-//       full_name: user_profile.full_name,
-//       profession: user_profile.profession,
-//       marital_status: user_profile.marital_status,
-//       address: user_profile.address,
-//       skills: user_profile.skills,
-//       interests: user_profile.interests,
-//       about: user_profile.about,
-//       city: user_profile.city
-//     };
-
-//     // Generate tokens
-//     const access_secret_key = process.env.ACCESS_SECRET_KEY;
-//     const refresh_secret_key = process.env.REFRESH_SECRET_KEY;
-
-//     const accessToken = jwt.sign(payload, access_secret_key, {
-//       expiresIn: "15m",
-//     });
-//     const refreshToken = jwt.sign(payload, refresh_secret_key, {
-//       expiresIn: "7d",
-//     });
-
-    
-//     // Send success response
-//     return res.status(200).json({
-//       message: "Login successful",
-//       user_profile,
-//       accessToken,
-//       refreshToken
-//     });
-//   } catch (err) {
-//     console.error("❌ loginUser error:", err);
-//     return res.status(500).json({ error: "Internal Server Error" });
-//   }
-// }
-
-
 import { pool } from "../config/db.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
@@ -203,7 +17,12 @@ export const registerUser = async (req, res) => {
     } = req.body;
 
     // Basic validation
-    if (!full_name || !email || !password || !profession) {
+    if (
+      !full_name ||
+      !email ||
+      !password ||
+      !profession
+       ) {
       return res
         .status(400)
         .json({ error: "Please fill all required fields." });
@@ -225,20 +44,22 @@ export const registerUser = async (req, res) => {
     const userQuery = `
       INSERT INTO users (email, password)
       VALUES ($1, $2)
-      RETURNING id, email, created_at;
+      RETURNING id,email,created_at;
     `;
+
     const userValues = [email, hashedPassword];
+
     const result = await pool.query(userQuery, userValues);
+
+    console.log(result);
+
     const user_id = result.rows[0].id;
 
-    const profileQuery = `
-      INSERT INTO profiles (
-        user_id, full_name, marital_status,
-        profession, interests, is_submitted
-      ) 
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING id, user_id, full_name, marital_status, profession, interests, created_at;
-    `;
+    const profileQuery = `INSERT INTO profiles (
+    user_id,full_name,marital_status,
+    profession,interests,is_submitted) 
+    VALUES ($1,$2,$3,$4,$5,$6)
+    RETURNING id,user_id,full_name,marital_status,profession,interests,created_at`;
 
     const profileValues = [
       user_id,
@@ -248,20 +69,20 @@ export const registerUser = async (req, res) => {
       JSON.stringify(interests),
       true,
     ];
-
     const profileResult = await pool.query(profileQuery, profileValues);
 
+    //profileResult.Result.row[0]
     const user = { profile_info: profileResult.rows[0] };
     user.email = result.rows[0].email;
+      
 
-    // ✅ Define payload before using it
     const payload = {
-      user_id,
-      email: user.email,
-      full_name: profileResult.rows[0].full_name,
-      profession: profileResult.rows[0].profession,
-      marital_status: profileResult.rows[0].marital_status,
-    };
+       user_id,
+       email: user.email,
+       full_name: profileResult.rows[0].full_name,
+       profession: profileResult.rows[0].profession,
+       marital_status: profileResult.rows[0].marital_status,
+     };
 
     // Generate tokens
     const access_secret_key = process.env.ACCESS_SECRET_KEY;
@@ -279,7 +100,7 @@ export const registerUser = async (req, res) => {
       message: "User registered successfully!",
       user,
       accessToken,
-      refreshToken,
+      refreshToken
     });
   } catch (error) {
     console.error("Error registering user:", error);
@@ -304,32 +125,38 @@ export async function loginUser(req, res) {
     `;
     const { rows } = await pool.query(userQuery, [email]);
 
+    // If user not found
     if (rows.length === 0) {
       return res.status(401).json({ error: "Invalid email" });
     }
 
     const user = rows[0];
 
-    // Compare password
+    // ✅ Compare entered password with hashed password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ error: "Invalid Password" });
     }
 
-    const profileQuery = `
-      SELECT id, full_name, gender, marital_status,
-             address, profession, skills, interests, about, city
-      FROM profiles WHERE user_id = $1
-    `;
-    const result = await pool.query(profileQuery, [user.id]);
+    const profileQuery = `SELECT id,full_name,phone,gender,marital_status,
+                        address , profession, skills, interests, about, city
+                        FROM profiles WHERE user_id = $1`;
+    //  const profileQuery = `SELECT id,full_name,gender,marital_status,
+    //                     address , profession, skills, interests, about, city
+    //                     FROM profiles WHERE user_id = $1`;
+
+    const result = await pool.query(profileQuery,[user.id]);     
+    
     const user_profile = result.rows[0];
+
     user_profile.email = user.email;
 
     // Create JWT payload
     const payload = {
-      id: user_profile.id,
+      id: user.id,
       user_id: user_profile.user_id,
       email: user_profile.email,
+      phone: user_profile.phone,
       full_name: user_profile.full_name,
       profession: user_profile.profession,
       marital_status: user_profile.marital_status,
@@ -337,7 +164,7 @@ export async function loginUser(req, res) {
       skills: user_profile.skills,
       interests: user_profile.interests,
       about: user_profile.about,
-      city: user_profile.city,
+      city: user_profile.city
     };
 
     // Generate tokens
@@ -351,17 +178,199 @@ export async function loginUser(req, res) {
       expiresIn: "7d",
     });
 
+    
+    // Send success response
     return res.status(200).json({
       message: "Login successful",
       user_profile,
       accessToken,
-      refreshToken,
+      refreshToken
     });
   } catch (err) {
     console.error("❌ loginUser error:", err);
     return res.status(500).json({ error: "Internal Server Error" });
   }
 }
+
+
+// import { pool } from "../config/db.js";
+// import jwt from "jsonwebtoken";
+// import dotenv from "dotenv";
+// import bcrypt from "bcrypt";
+// import { transporter } from "../mailer.js";
+// dotenv.config();
+
+// export const registerUser = async (req, res) => {
+//   try {
+//     const {
+//       full_name,
+//       email,
+//       password,
+//       profession,
+//       interests,
+//       marital_status,
+//     } = req.body;
+
+//     // Basic validation
+//     if (!full_name || !email || !password || !profession) {
+//       return res
+//         .status(400)
+//         .json({ error: "Please fill all required fields." });
+//     }
+
+//     // Check if user already exists
+//     const existingUser = await pool.query(
+//       "SELECT * FROM users WHERE email = $1",
+//       [email]
+//     );
+//     if (existingUser.rows.length > 0) {
+//       return res.status(400).json({ error: "User already exists." });
+//     }
+
+//     // Hash password
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     // Insert user
+//     const userQuery = `
+//       INSERT INTO users (email, password)
+//       VALUES ($1, $2)
+//       RETURNING id, email, created_at;
+//     `;
+//     const userValues = [email, hashedPassword];
+//     const result = await pool.query(userQuery, userValues);
+//     const user_id = result.rows[0].id;
+
+//     const profileQuery = `
+//       INSERT INTO profiles (
+//         user_id, full_name, marital_status,
+//         profession, interests, is_submitted
+//       ) 
+//       VALUES ($1, $2, $3, $4, $5, $6)
+//       RETURNING id, user_id, full_name, marital_status, profession, interests, created_at;
+//     `;
+
+//     const profileValues = [
+//       user_id,
+//       full_name,
+//       marital_status,
+//       profession,
+//       JSON.stringify(interests),
+//       true,
+//     ];
+
+//     const profileResult = await pool.query(profileQuery, profileValues);
+
+//     const user = { profile_info: profileResult.rows[0] };
+//     user.email = result.rows[0].email;
+
+//     // ✅ Define payload before using it
+//     const payload = {
+//       user_id,
+//       email: user.email,
+//       full_name: profileResult.rows[0].full_name,
+//       profession: profileResult.rows[0].profession,
+//       marital_status: profileResult.rows[0].marital_status,
+//     };
+
+//     // Generate tokens
+//     const access_secret_key = process.env.ACCESS_SECRET_KEY;
+//     const refresh_secret_key = process.env.REFRESH_SECRET_KEY;
+
+//     const accessToken = jwt.sign(payload, access_secret_key, {
+//       expiresIn: "15m",
+//     });
+//     const refreshToken = jwt.sign(payload, refresh_secret_key, {
+//       expiresIn: "7d",
+//     });
+
+//     console.log(user);
+//     res.status(201).json({
+//       message: "User registered successfully!",
+//       user,
+//       accessToken,
+//       refreshToken,
+//     });
+//   } catch (error) {
+//     console.error("Error registering user:", error);
+//     res.status(500).json({ error: "Internal server error." });
+//   }
+// };
+
+// export async function loginUser(req, res) {
+//   try {
+//     const { email, password } = req.body;
+
+//     // Basic validation
+//     if (!email || !password) {
+//       return res.status(400).json({ error: "Email and password are required" });
+//     }
+
+//     // Find user by email
+//     const userQuery = `
+//       SELECT id, email, password
+//       FROM users
+//       WHERE email = $1
+//     `;
+//     const { rows } = await pool.query(userQuery, [email]);
+
+//     if (rows.length === 0) {
+//       return res.status(401).json({ error: "Invalid email" });
+//     }
+
+//     const user = rows[0];
+
+//     // Compare password
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) {
+//       return res.status(401).json({ error: "Invalid Password" });
+//     }
+
+//     const profileQuery = `
+//       SELECT id, full_name, gender, marital_status,
+//              address, profession, skills, interests, about, city
+//       FROM profiles WHERE user_id = $1
+//     `;
+//     const result = await pool.query(profileQuery, [user.id]);
+//     const user_profile = result.rows[0];
+//     user_profile.email = user.email;
+
+//     // Create JWT payload
+//     const payload = {
+//       id: user_profile.id,
+//       user_id: user_profile.user_id,
+//       email: user_profile.email,
+//       full_name: user_profile.full_name,
+//       profession: user_profile.profession,
+//       marital_status: user_profile.marital_status,
+//       address: user_profile.address,
+//       skills: user_profile.skills,
+//       interests: user_profile.interests,
+//       about: user_profile.about,
+//       city: user_profile.city,
+//     };
+
+//     // Generate tokens
+//     const access_secret_key = process.env.ACCESS_SECRET_KEY;
+//     const refresh_secret_key = process.env.REFRESH_SECRET_KEY;
+
+//     const accessToken = jwt.sign(payload, access_secret_key, {
+//       expiresIn: "15m",
+//     });
+//     const refreshToken = jwt.sign(payload, refresh_secret_key, {
+//       expiresIn: "7d",
+//     });
+
+//     return res.status(200).json({
+//       message: "Login successful",
+//       user_profile,
+//       accessToken,
+//       refreshToken,
+//     });
+//   } catch (err) {
+//     console.error("❌ loginUser error:", err);
+//     return res.status(500).json({ error: "Internal Server Error" });
+//   }
+// }
 
 
 
