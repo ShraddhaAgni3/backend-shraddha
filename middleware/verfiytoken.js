@@ -21,7 +21,8 @@ export const validateAccessToken = async (req, res, next) => {
 
 export const validateRefreshToken = (req, res, next) => {
   try {
-    const refreshToken = req.headers.authorization.split(" ")[1];
+    // const refreshToken = req.headers.authorization.split(" ")[1];
+    const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) {
       res.status(404).json({ message: "refresh token not found" });
     }
@@ -46,7 +47,7 @@ export const validateRefreshToken = (req, res, next) => {
       expiresIn: "15m",
     });
     res.status(200).json({
-      status:success,
+      status: 'success',
       message: "New access token generated successfully",
       accessToken
     })

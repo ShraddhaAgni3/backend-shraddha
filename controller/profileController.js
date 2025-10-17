@@ -48,7 +48,7 @@ export const updateProfile = async (req, res) => {
     experience = $16,
     updated_at = NOW(),
     is_submitted = true
-  WHERE id = $17
+  WHERE user_id = $17
   RETURNING *;
 `;
 const profileValues = [
@@ -70,8 +70,10 @@ const profileValues = [
   experience,
   id
 ];
+
     const profileResult = await pool.query(updateProfileQuery, profileValues);
 
+     console.log("user",profileValues);
     if (profileResult.rows.length === 0) {
       return res.status(404).json({ message: 'Profile not found' });
     }
@@ -102,3 +104,85 @@ const profileValues = [
   }
 };
 
+
+
+export const getProfile = async (req, res) => {
+  try {
+    const { id } = req.user; // middleware se mila (validateAccessToken)
+    console.log("Fetching profile for user id:", id);
+
+    // 1️⃣ Check if user exists in users table
+    const userQuery = `
+      SELECT id, email
+      FROM users
+      WHERE id = $1
+    `;
+    const userResult = await pool.query(userQuery, [id]);
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 2️⃣ Fetch profile details from profiles table using user_id
+    const profileQuery = `
+      SELECT 
+        full_name,
+        phone,
+        gender,
+        marital_status,
+        address,
+        profession,
+        skills,
+        interests,
+        about,
+        city,
+        headline,
+        dob,
+        age,
+        education,
+        company,
+        experience,
+        is_submitted,
+        updated_at
+      FROM profiles
+      WHERE user_id = $1
+    `;
+    const profileResult = await pool.query(profileQuery, [id]);
+
+    const user = userResult.rows[0];
+    const profile = profileResult.rows.length > 0 ? profileResult.rows[0] : {};
+
+    // 3️⃣ Merge user + profile details
+    const combinedData = {
+      user_id: user.id,
+      email: user.email,
+      full_name: profile.full_name || null,
+      profession: profile.profession || null,
+      phone: profile.phone || null,
+      gender: profile.gender || null,
+      marital_status: profile.marital_status || null,
+      address: profile.address || null,
+      skills: profile.skills || null,
+      interests: profile.interests || null,
+      about: profile.about || null,
+      city: profile.city || null,
+      headline: profile.headline || null,
+      dob: profile.dob || null,
+      age: profile.age || null,
+      education: profile.education || null,
+      company: profile.company || null,
+      experience: profile.experience || null,
+      is_submitted: profile.is_submitted || false,
+      updated_at: profile.updated_at || null,
+    };
+
+    // 4️⃣ Send response
+    res.status(200).json({
+      message: "Profile fetched successfully",
+      data: combinedData,
+    });
+
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
