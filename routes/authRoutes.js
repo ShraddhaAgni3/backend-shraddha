@@ -5,7 +5,7 @@ import { validateRefreshToken } from "../middleware/verfiytoken.js";
 
 const router = express.Router();
 
-
+// Auth Routes
 router.post("/api/register",registerUser);
 router.post("/api/login",loginUser);
 router.post("/api/forgotpassword",forgotPassword);
