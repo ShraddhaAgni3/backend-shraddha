@@ -4,6 +4,7 @@ import { validateAccessToken } from "../middleware/verfiytoken.js";
 
 const router = express.Router();
 
+// Profile Routes
 //router.post("/api/createProfile",createProfile);
 router.put("/api/editProfile",validateAccessToken,updateProfile);
 router.get("/api/me",validateAccessToken,getProfile);

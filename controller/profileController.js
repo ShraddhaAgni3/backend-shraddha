@@ -1,111 +1,100 @@
 import { pool } from "../config/db.js";
 
+// Update Profile and Email
 export const updateProfile = async (req, res) => {
   try {
     const {
-      email,        // new email to update in users table
+      email, full_name, headline, phone, dob, age, education,
+      company, experience, gender, marital_status, address,
+      profession, skills, interests, about, city
+    } = req.body;
+
+    if (!email || !full_name || !dob || !age) {
+      return res.status(400).json({ message: "Email, Full name, DOB and Age are required" });
+    }
+
+    const { id } = req.user;
+
+    const updateProfileQuery = `
+      UPDATE profiles
+      SET 
+        full_name = $1,
+        phone = $2,
+        gender = $3,
+        marital_status = $4,
+        address = $5,
+        profession = $6,
+        skills = $7,
+        interests = $8,
+        about = $9,
+        city = $10,
+        headline = $11,
+        dob = $12,
+        age = $13,
+        education = $14,
+        company = $15,
+        experience = $16,
+        updated_at = NOW(),
+        is_submitted = true
+      WHERE user_id = $17
+      RETURNING *;
+    `;
+
+    const profileValues = [
       full_name,
-      headline,
       phone,
+      gender,
+      marital_status,
+      address,
+      profession,
+      JSON.stringify(skills),
+      JSON.stringify(interests),
+      about,
+      city,
+      headline,
       dob,
       age,
       education,
       company,
       experience,
-      gender,
-      marital_status,
-      address,
-      profession,
-      skills,
-      interests,
-      about,
-      city
-    } = req.body;
-
-    const {id} = req.user;
-     console.log("user:- ", req.user);
-      console.log("re.body: ", req.body);
-
-    // 2️⃣ Update profiles table
-    const updateProfileQuery = `
-  UPDATE profiles
-  SET 
-    full_name = $1,
-    phone = $2,
-    gender = $3,
-    marital_status = $4,
-    address = $5,
-    profession = $6,
-    skills = $7,
-    interests = $8,
-    about = $9,
-    city = $10,
-    headline = $11,
-    dob = $12,
-    age = $13,
-    education = $14,
-    company = $15,
-    experience = $16,
-    updated_at = NOW(),
-    is_submitted = true
-  WHERE user_id = $17
-  RETURNING *;
-`;
-const profileValues = [
-  full_name,
-  phone,
-  gender,
-  marital_status,
-  address,
-  profession,
-  JSON.stringify(skills),
-  JSON.stringify(interests),
-  about,
-  city,
-  headline,
-  dob,
-  age,
-  education,
-  company,
-  experience,
-  id
-];
+      id
+    ];
 
     const profileResult = await pool.query(updateProfileQuery, profileValues);
 
-     console.log("user",profileValues);
     if (profileResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Profile not found' });
+      return res.status(404).json({ message: "Profile not found" });
     }
 
-    // Update users table
     const updateUserQuery = `
       UPDATE users
       SET email = $1, updated_at = NOW()
       WHERE id = $2
-      RETURNING email;
+      RETURNING id, email;
     `;
-    const userValues = [email, profileResult.rows[0].user_id];
-    const userResult = await pool.query(updateUserQuery, userValues);
+    const userResult = await pool.query(updateUserQuery, [email, id]);
 
     if (userResult.rows.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({
-      message: 'Profile and email updated successfully',
+    // Exclude DOB and age if you want
+    const { dob: removedDob, age: removedAge, ...safeProfile } = profileResult.rows[0];
+
+    return res.status(200).json({
+      message: "Profile and email updated successfully",
       user: userResult.rows[0],
-      profile: profileResult.rows[0]
+      profile: safeProfile
     });
 
   } catch (error) {
-    console.error('Error updating profile and email:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error("Error updating profile and email:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
 
-
+// Get Profile
 export const getProfile = async (req, res) => {
   try {
     const { id } = req.user; // middleware se mila (validateAccessToken)
@@ -147,7 +136,7 @@ export const getProfile = async (req, res) => {
       WHERE user_id = $1
     `;
     const profileResult = await pool.query(profileQuery, [id]);
-
+         
     const user = userResult.rows[0];
     const profile = profileResult.rows.length > 0 ? profileResult.rows[0] : {};
 
@@ -174,7 +163,7 @@ export const getProfile = async (req, res) => {
       is_submitted: profile.is_submitted || false,
       updated_at: profile.updated_at || null,
     };
-
+         console.log("error",  combinedData);
     // 4️⃣ Send response
     res.status(200).json({
       message: "Profile fetched successfully",

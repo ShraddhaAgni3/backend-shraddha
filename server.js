@@ -15,6 +15,7 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
+// Routes
 app.use("/",authRoutes);
 app.use("/",profileRoutes);
 app.use("/",adminRoutes)
