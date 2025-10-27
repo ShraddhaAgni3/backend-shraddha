@@ -159,7 +159,52 @@ export const deactivateUser = async (req, res) => {
 };
 
 
+//  Get All Users
+export const getAllUsers = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        u.id,
+        u.email,
+        u.password,
+        u.status,
+        u.created_at,
+        u.updated_at,
+        p.full_name,
+        p.profession
+      FROM users u
+      LEFT JOIN profiles p
+      ON u.id = p.user_id
+      ORDER BY u.created_at DESC;
+    `;
 
+    const { rows } = await pool.query(query);
+
+    const users = rows.map((user) => ({
+      id: user.id,
+      full_name: user.full_name || null,
+      email: user.email,
+      password: user.password,
+      profession: user.profession || null,
+      status: user.status ? user.status.toLowerCase() : "In Process",
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+    }));
+
+    return res.status(200).json({
+      status: "success",
+      message: "Users fetched successfully",
+      users,
+    });
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to fetch users",
+      error: error.message,
+    });
+  }
+};
 
 
 
