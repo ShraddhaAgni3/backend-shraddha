@@ -138,6 +138,7 @@ export const getProfile = async (req, res) => {
     const profileResult = await pool.query(profileQuery, [id]);
          
     const user = userResult.rows[0];
+    console.log("User found:", user,);
     const profile = profileResult.rows.length > 0 ? profileResult.rows[0] : {};
 
     // 3️⃣ Merge user + profile details
