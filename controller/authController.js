@@ -17,12 +17,7 @@ export const registerUser = async (req, res) => {
     } = req.body;
 
     // Basic validation
-    if (
-      !full_name ||
-      !email ||
-      !password ||
-      !profession
-       ) {
+    if (!full_name || !email || !password || !profession) {
       return res
         .status(400)
         .json({ error: "Please fill all required fields." });
@@ -72,15 +67,14 @@ export const registerUser = async (req, res) => {
     //profileResult.Result.row[0]
     const user = { profile_info: profileResult.rows[0] };
     user.email = result.rows[0].email;
-      
 
     const payload = {
-       user_id,
-       email: user.email,
-       full_name: profileResult.rows[0].full_name,
-       profession: profileResult.rows[0].profession,
-       marital_status: profileResult.rows[0].marital_status,
-     };
+      user_id,
+      email: user.email,
+      full_name: profileResult.rows[0].full_name,
+      profession: profileResult.rows[0].profession,
+      marital_status: profileResult.rows[0].marital_status,
+    };
 
     // Generate tokens
     const access_secret_key = process.env.ACCESS_SECRET_KEY;
@@ -93,12 +87,11 @@ export const registerUser = async (req, res) => {
       expiresIn: "7d",
     });
 
-    
     res.status(201).json({
       message: "User registered successfully!",
       user,
       accessToken,
-      refreshToken
+      refreshToken,
     });
   } catch (error) {
     console.error("Error registering user:", error);
@@ -121,9 +114,9 @@ export async function loginUser(req, res) {
       FROM users
       WHERE email = $1
     `;
-    
+
     const { rows } = await pool.query(userQuery, [email]);
-    
+
     // If user not found
     if (rows.length === 0) {
       return res.status(401).json({ error: "Invalid email" });
@@ -137,19 +130,21 @@ export async function loginUser(req, res) {
       return res.status(401).json({ error: "Invalid Password" });
     }
 
-    const profileQuery = `SELECT id,full_name, profession
+    const profileQuery = `SELECT id,full_name, profession, phone,
+      marital_status,gender,skills, interests,about, city, 
+      headline, dob, age, education, company, experience, 
                         FROM profiles WHERE user_id = $1`;
     //  const profileQuery = `SELECT id,full_name,gender,marital_status,
     //                     address , profession, skills, interests, about, city
     //                     FROM profiles WHERE user_id = $1`;
 
-    const result = await pool.query(profileQuery,[user.id]);  
-    
+    const result = await pool.query(profileQuery, [user.id]);
+
     const user_profile = result.rows[0];
-    
 
     user_profile.email = user.email;
-    
+    //user_profile.user_id = user.id;
+
     // Create JWT payload
     const payload = {
       id: user.id,
@@ -164,7 +159,14 @@ export async function loginUser(req, res) {
       interests: user_profile.interests,
       about: user_profile.about,
       city: user_profile.city,
-      status:rows.status
+      status: rows.status,
+      company: user_profile.company,
+      experience: user_profile.experience,
+      headline: user_profile.headline,
+      dob: user_profile.dob,
+      age: user_profile.age,
+      education: user_profile.education,
+
     };
 
     // Generate tokens
@@ -178,16 +180,15 @@ export async function loginUser(req, res) {
       expiresIn: "7d",
     });
 
-    const status=rows[0].status;
+    const status = rows[0].status;
     // Send success response
+    console.log( "User Profile: - " ,user_profile)
     return res.status(200).json({
       message: "Login successful",
       user_profile,
       status,
       accessToken,
       refreshToken,
-      
-      
     });
   } catch (err) {
     console.error("❌ loginUser error:", err);
@@ -195,19 +196,22 @@ export async function loginUser(req, res) {
   }
 }
 
-
 // Forgot Password
-export const forgotPassword=async (req, res) => {
-   try {
+export const forgotPassword = async (req, res) => {
+  try {
     const { email } = req.body;
-    const user = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    const user = await pool.query("SELECT * FROM users WHERE email = $1", [
+      email,
+    ]);
 
     if (!user.rows.length) {
       return res.status(404).json({ error: "User not found" });
     }
 
     // generate reset token (valid for 15 mins)
-    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "15m" });
+    const token = jwt.sign({ email }, process.env.JWT_SECRET, {
+      expiresIn: "15m",
+    });
 
     const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
 
@@ -232,7 +236,7 @@ export const forgotPassword=async (req, res) => {
 };
 
 // Reset Password
-export const resetPassword=async (req, res) => {
+export const resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
     const { password } = req.body;
@@ -242,7 +246,10 @@ export const resetPassword=async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await pool.query("UPDATE users SET password = $1 WHERE email = $2", [hashedPassword, email]);
+    await pool.query("UPDATE users SET password = $1 WHERE email = $2", [
+      hashedPassword,
+      email,
+    ]);
 
     res.json({ message: "Password reset successful." });
   } catch (error) {
@@ -250,4 +257,3 @@ export const resetPassword=async (req, res) => {
     res.status(400).json({ error: "Invalid or expired token." });
   }
 };
-
