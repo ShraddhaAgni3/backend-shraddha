@@ -99,53 +99,129 @@ export const registerUser = async (req, res) => {
   }
 };
 
+// export async function loginUser(req, res) {
+//   try {
+//     const { email, password } = req.body;
+
+//     // Basic validation
+//     if (!email || !password) {
+//       return res.status(400).json({ error: "Email and password are required" });
+//     }
+
+//     // Find user by email
+//     const userQuery = `
+//       SELECT id, email, password, status
+//       FROM users
+//       WHERE email = $1
+//     `;
+
+//     const { rows } = await pool.query(userQuery, [email]);
+
+//     // If user not found
+//     if (rows.length === 0) {
+//       return res.status(401).json({ error: "Invalid email" });
+//     }
+
+//     const user = rows[0];
+
+//     // ✅ Compare entered password with hashed password
+//     const isMatch = await bcrypt.compare(password, user.password);
+//     if (!isMatch) {
+//       return res.status(401).json({ error: "Invalid Password" });
+//     }
+
+//     const profileQuery = `SELECT id,full_name, profession
+//                         FROM profiles WHERE user_id = $1`;
+//     //  const profileQuery = `SELECT id,full_name,gender,marital_status,
+//     //                     address , profession, skills, interests, about, city
+//     //                     FROM profiles WHERE user_id = $1`;
+
+//     const result = await pool.query(profileQuery,[user.id]);
+
+//     const user_profile = result.rows[0];
+
+//     user_profile.email = user.email;
+
+//     // Create JWT payload
+//     const payload = {
+//       id: user.id,
+//       user_id: user_profile.user_id,
+//       email: user_profile.email,
+//       phone: user_profile.phone,
+//       full_name: user_profile.full_name,
+//       profession: user_profile.profession,
+//       marital_status: user_profile.marital_status,
+//       address: user_profile.address,
+//       skills: user_profile.skills,
+//       interests: user_profile.interests,
+//       about: user_profile.about,
+//       city: user_profile.city,
+//       status:user.status
+//     };
+
+//     // Generate tokens
+//     const access_secret_key = process.env.ACCESS_SECRET_KEY;
+//     const refresh_secret_key = process.env.REFRESH_SECRET_KEY;
+
+//     const accessToken = jwt.sign(payload, access_secret_key, {
+//       expiresIn: "15m",
+//     });
+//     const refreshToken = jwt.sign(payload, refresh_secret_key, {
+//       expiresIn: "7d",
+//     });
+
+//     const status=rows[0].status;
+//     // Send success response
+//     return res.status(200).json({
+//       message: "Login successful",
+//       user_profile,
+//       status,
+//       accessToken,
+//       refreshToken,
+
+//     });
+//   } catch (err) {
+//     console.error("❌ loginUser error:", err);
+//     return res.status(500).json({ error: "Internal Server Error" });
+//   }
+// }
+
 export async function loginUser(req, res) {
   try {
     const { email, password } = req.body;
 
-    // Basic validation
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required" });
     }
 
-    // Find user by email
-    const userQuery = `
-      SELECT id, email, password, status
-      FROM users
-      WHERE email = $1
-    `;
-
+    const userQuery = `SELECT id, email, password, status FROM users WHERE email = $1`;
     const { rows } = await pool.query(userQuery, [email]);
 
-    // If user not found
     if (rows.length === 0) {
       return res.status(401).json({ error: "Invalid email" });
     }
 
     const user = rows[0];
-
-    // ✅ Compare entered password with hashed password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ error: "Invalid Password" });
     }
 
-    const profileQuery = `SELECT id,full_name, profession, phone,
-      marital_status,gender,skills, interests,about, city, 
-      headline, dob, age, education, company, experience, 
-                        FROM profiles WHERE user_id = $1`;
-    //  const profileQuery = `SELECT id,full_name,gender,marital_status,
-    //                     address , profession, skills, interests, about, city
-    //                     FROM profiles WHERE user_id = $1`;
-
+    const profileQuery = `
+      SELECT id, user_id, full_name, profession, phone, marital_status,
+             address, skills, interests, about, city
+      FROM profiles
+      WHERE user_id = $1
+    `;
     const result = await pool.query(profileQuery, [user.id]);
-
     const user_profile = result.rows[0];
 
-    user_profile.email = user.email;
-    //user_profile.user_id = user.id;
+    if (!user_profile) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
 
-    // Create JWT payload
+    user_profile.email = user.email;
+
     const payload = {
       id: user.id,
       user_id: user_profile.user_id,
@@ -159,17 +235,9 @@ export async function loginUser(req, res) {
       interests: user_profile.interests,
       about: user_profile.about,
       city: user_profile.city,
-      status: rows.status,
-      company: user_profile.company,
-      experience: user_profile.experience,
-      headline: user_profile.headline,
-      dob: user_profile.dob,
-      age: user_profile.age,
-      education: user_profile.education,
-
+      status: user.status,
     };
 
-    // Generate tokens
     const access_secret_key = process.env.ACCESS_SECRET_KEY;
     const refresh_secret_key = process.env.REFRESH_SECRET_KEY;
 
@@ -180,13 +248,10 @@ export async function loginUser(req, res) {
       expiresIn: "7d",
     });
 
-    const status = rows[0].status;
-    // Send success response
-    console.log( "User Profile: - " ,user_profile)
     return res.status(200).json({
       message: "Login successful",
       user_profile,
-      status,
+      status: user.status,
       accessToken,
       refreshToken,
     });
