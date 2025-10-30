@@ -3,7 +3,103 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import { transporter } from "../mailer.js";
+import { sendNotification } from "../server.js";
 dotenv.config();
+
+// export const registerUser = async (req, res) => {
+//   try {
+//     const {
+//       full_name,
+//       email,
+//       password,
+//       profession,
+//       interests,
+//       marital_status,
+//     } = req.body;
+
+//     // Basic validation
+//     if (!full_name || !email || !password || !profession) {
+//       return res
+//         .status(400)
+//         .json({ error: "Please fill all required fields." });
+//     }
+
+//     // Check if user already exists
+//     const existingUser = await pool.query(
+//       "SELECT * FROM users WHERE email = $1",
+//       [email]
+//     );
+//     if (existingUser.rows.length > 0) {
+//       return res.status(400).json({ error: "User already exists." });
+//     }
+
+//     // Hash password
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     // Insert user
+//     const userQuery = `
+//       INSERT INTO users (email, password)
+//       VALUES ($1, $2)
+//       RETURNING id,email,created_at;
+//     `;
+
+//     const userValues = [email, hashedPassword];
+
+//     const result = await pool.query(userQuery, userValues);
+
+//     const user_id = result.rows[0].id;
+
+//     const profileQuery = `INSERT INTO profiles (
+//     user_id,full_name,marital_status,
+//     profession,interests,is_submitted) 
+//     VALUES ($1,$2,$3,$4,$5,$6)
+//     RETURNING id,user_id,full_name,marital_status,profession,interests,created_at`;
+
+//     const profileValues = [
+//       user_id,
+//       full_name,
+//       marital_status,
+//       profession,
+//       JSON.stringify(interests),
+//       true,
+//     ];
+//     const profileResult = await pool.query(profileQuery, profileValues);
+
+//     //profileResult.Result.row[0]
+//     const user = { profile_info: profileResult.rows[0] };
+//     user.email = result.rows[0].email;
+
+//     const payload = {
+//       user_id,
+//       email: user.email,
+//       full_name: profileResult.rows[0].full_name,
+//       profession: profileResult.rows[0].profession,
+//       marital_status: profileResult.rows[0].marital_status,
+//     };
+
+//     // Generate tokens
+//     const access_secret_key = process.env.ACCESS_SECRET_KEY;
+//     const refresh_secret_key = process.env.REFRESH_SECRET_KEY;
+
+//     const accessToken = jwt.sign(payload, access_secret_key, {
+//       expiresIn: "15m",
+//     });
+//     const refreshToken = jwt.sign(payload, refresh_secret_key, {
+//       expiresIn: "7d",
+//     });
+
+//     res.status(201).json({
+//       message: "User registered successfully!",
+//       user,
+//       accessToken,
+//       refreshToken,
+//     });
+//   } catch (error) {
+//     console.error("Error registering user:", error);
+//     res.status(500).json({ error: "Internal server error." });
+//   }
+// };
+
 
 export const registerUser = async (req, res) => {
   try {
@@ -41,16 +137,15 @@ export const registerUser = async (req, res) => {
       VALUES ($1, $2)
       RETURNING id,email,created_at;
     `;
-
     const userValues = [email, hashedPassword];
-
     const result = await pool.query(userQuery, userValues);
 
     const user_id = result.rows[0].id;
 
     const profileQuery = `INSERT INTO profiles (
-    user_id,full_name,marital_status,
-    profession,interests,is_submitted) 
+      user_id, full_name, marital_status,
+      profession, interests, is_submitted
+    ) 
     VALUES ($1,$2,$3,$4,$5,$6)
     RETURNING id,user_id,full_name,marital_status,profession,interests,created_at`;
 
@@ -64,7 +159,6 @@ export const registerUser = async (req, res) => {
     ];
     const profileResult = await pool.query(profileQuery, profileValues);
 
-    //profileResult.Result.row[0]
     const user = { profile_info: profileResult.rows[0] };
     user.email = result.rows[0].email;
 
@@ -87,6 +181,13 @@ export const registerUser = async (req, res) => {
       expiresIn: "7d",
     });
 
+    // ✅ Send notification to user
+    await sendNotification(
+      user_id,
+      "Registration Successful",
+      "You have successfully registered. Please wait for admin approval."
+    );
+
     res.status(201).json({
       message: "User registered successfully!",
       user,
@@ -98,6 +199,8 @@ export const registerUser = async (req, res) => {
     res.status(500).json({ error: "Internal server error." });
   }
 };
+
+
 
 // export async function loginUser(req, res) {
 //   try {
