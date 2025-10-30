@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { pool } from "../config/db.js";
+import { sendNotification } from "../server.js";
 dotenv.config();
 
 // ---------------- Admin Login ----------------
@@ -39,42 +40,169 @@ export const adminLogin = async (req, res) => {
   }
 };
 
+// //  Approve User
+// export const approveUser=async(req,res)=>{
+//   const approvedUser=req.body;
+  
+//     const updateQuery=`UPDATE users SET status='Approve', approved_by=$1, updated_at=NOW() WHERE id=$2 RETURNING *`;
+//     const values=[approvedUser.approved_by,approvedUser.id];
+//     try{
+//       const result=await pool.query(updateQuery,values);
+//       if(result.rows.length===0){
+//         return res.status(404).json({message:"User not found"});
+//       }
+//       const {reason, ...userWithoutReason}=result.rows[0];
+//       return res.status(200).json({
+//         status: "success",
+//         message: "User approved successfully",
+//         user: userWithoutReason,
+//       });
+//     }catch(error){
+//       console.error("Error approving user:",error);
+//       return res.status(500).json({message:"Internal server error"});
+//     }
+  
+// }
+// //  Put User On Hold
+// export const onHoldUser = async (req, res) => {
+//   try {
+//     const { user_id, reason } = req.body;
+
+//     // 🔸 Validate required field
+//     if (!user_id) {
+//       return res.status(400).json({
+//         message: "user_id is required",
+//       });
+//     }
+
+//     // 🔸 Update user status to on_hold
+//     const updateQuery = `
+//       UPDATE users
+//       SET status = 'On Hold',
+//           reason = $1,
+//           updated_at = NOW()
+//       WHERE id = $2::integer
+//       RETURNING id, status, reason, updated_at
+//     `;
+
+//     // Only two parameters match $1 and $2
+//     const values = [reason || null, user_id];
+
+//     const result = await pool.query(updateQuery, values);
+
+//     // 🔸 Handle if user not found
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({
+//         message: "User not found",
+//       });
+//     }
+
+//     // 🔸 Success response
+//     return res.status(200).json({
+      
+//       message: "User placed on hold",
+//       user: result.rows[0],
+//     });
+//   } catch (error) {
+//     console.error("Error placing user on hold:", error);
+//     return res.status(500).json({
+//       message: "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
+
+// //  Deactivate User
+// export const deactivateUser = async (req, res) => {
+
+//   try {
+//     const { user_id, reason } = req.body;
+
+//     // 🔹 Validate required fields
+//     if (!user_id) {
+//       return res.status(400).json({
+//         message: "user_id is required",
+//       });
+//     }
+
+//     // 🔹 Update user status to 'deactivate'
+//     const updateQuery = `
+//       UPDATE users
+//       SET status = 'Deactivate',
+//           reason = $1
+//       WHERE id = $2::integer
+//       RETURNING id, status, reason
+//     `;
+
+//     const values = [reason || null, user_id];
+//     const result = await pool.query(updateQuery, values);
+
+//     // 🔹 If no user found
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({
+//         message: "User not found",
+//       });
+//     }
+
+//     // 🔹 Success response
+//     return res.status(200).json({
+//       status: "success",
+//       message: "User deactivate successfully",
+//       user: result.rows[0],
+//     });
+//   } catch (error) {
+//     console.error("Error deactivating user:", error);
+//     return res.status(500).json({
+//       message: "Internal server error",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
+
+
+
 //  Approve User
-export const approveUser=async(req,res)=>{
-  const approvedUser=req.body;
-  
-    const updateQuery=`UPDATE users SET status='Approve', approved_by=$1, updated_at=NOW() WHERE id=$2 RETURNING *`;
-    const values=[approvedUser.approved_by,approvedUser.id];
-    try{
-      const result=await pool.query(updateQuery,values);
-      if(result.rows.length===0){
-        return res.status(404).json({message:"User not found"});
-      }
-      const {reason, ...userWithoutReason}=result.rows[0];
-      return res.status(200).json({
-        status: "success",
-        message: "User approved successfully",
-        user: userWithoutReason,
-      });
-    }catch(error){
-      console.error("Error approving user:",error);
-      return res.status(500).json({message:"Internal server error"});
+export const approveUser = async (req, res) => {
+  const approvedUser = req.body;
+
+  const updateQuery = `UPDATE users SET status='Approve', approved_by=$1, updated_at=NOW() WHERE id=$2 RETURNING *`;
+  const values = [approvedUser.approved_by, approvedUser.id];
+  try {
+    const result = await pool.query(updateQuery, values);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
     }
-  
-}
+
+    const { reason, ...userWithoutReason } = result.rows[0];
+
+    // ✅ Send notification
+    await sendNotification(
+      approvedUser.id,
+      "Account Approved",
+      "Your account has been approved by the admin."
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "User approved successfully",
+      user: userWithoutReason,
+    });
+  } catch (error) {
+    console.error("Error approving user:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 //  Put User On Hold
 export const onHoldUser = async (req, res) => {
   try {
     const { user_id, reason } = req.body;
-
-    // 🔸 Validate required field
     if (!user_id) {
-      return res.status(400).json({
-        message: "user_id is required",
-      });
+      return res.status(400).json({ message: "user_id is required" });
     }
 
-    // 🔸 Update user status to on_hold
     const updateQuery = `
       UPDATE users
       SET status = 'On Hold',
@@ -83,22 +211,21 @@ export const onHoldUser = async (req, res) => {
       WHERE id = $2::integer
       RETURNING id, status, reason, updated_at
     `;
-
-    // Only two parameters match $1 and $2
     const values = [reason || null, user_id];
-
     const result = await pool.query(updateQuery, values);
 
-    // 🔸 Handle if user not found
     if (result.rows.length === 0) {
-      return res.status(404).json({
-        message: "User not found",
-      });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // 🔸 Success response
+    // ✅ Send notification
+    await sendNotification(
+      user_id,
+      "Account On Hold",
+      `Your account has been put on hold. Reason: ${reason || "Not specified"}`
+    );
+
     return res.status(200).json({
-      
       message: "User placed on hold",
       user: result.rows[0],
     });
@@ -113,18 +240,12 @@ export const onHoldUser = async (req, res) => {
 
 //  Deactivate User
 export const deactivateUser = async (req, res) => {
-
   try {
     const { user_id, reason } = req.body;
-
-    // 🔹 Validate required fields
     if (!user_id) {
-      return res.status(400).json({
-        message: "user_id is required",
-      });
+      return res.status(400).json({ message: "user_id is required" });
     }
 
-    // 🔹 Update user status to 'deactivate'
     const updateQuery = `
       UPDATE users
       SET status = 'Deactivate',
@@ -132,18 +253,20 @@ export const deactivateUser = async (req, res) => {
       WHERE id = $2::integer
       RETURNING id, status, reason
     `;
-
     const values = [reason || null, user_id];
     const result = await pool.query(updateQuery, values);
 
-    // 🔹 If no user found
     if (result.rows.length === 0) {
-      return res.status(404).json({
-        message: "User not found",
-      });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // 🔹 Success response
+    // ✅ Send notification
+    await sendNotification(
+      user_id,
+      "Account Deactivated",
+      `Your account has been deactivated. Reason: ${reason || "Not specified"}`
+    );
+
     return res.status(200).json({
       status: "success",
       message: "User deactivate successfully",
@@ -160,94 +283,6 @@ export const deactivateUser = async (req, res) => {
 
 
 
-
-
-// export const getAllUsers = async (req, res) => {
-//   try {
-//     // 1️⃣ Short User List Query (for all users)
-//     const query1 = `
-//       SELECT 
-//         u.id,
-//         u.email,
-//         u.password,
-//         u.status,
-//         u.created_at,
-//         u.updated_at,
-//         p.full_name,
-//         p.profession
-//       FROM users u
-//       LEFT JOIN profiles p
-//       ON u.id = p.user_id
-//       ORDER BY u.created_at DESC;
-//     `;
-
-//     const { rows: usersList } = await pool.query(query1);
-
-//     const users = usersList.map((user) => ({
-//       id: user.id,
-//       full_name: user.full_name || null,
-//       email: user.email,
-//       password: user.password,
-//       profession: user.profession || null,
-//       status: user.status ? user.status.toLowerCase() : "in process",
-//       createdAt: user.created_at,
-//       updatedAt: user.updated_at,
-//     }));
-
-//     // 2️⃣ Detailed Profile Info Query (for all user details)
-//     const query2 = `
-//       SELECT 
-//         u.id AS user_id,
-//         u.email,
-//         u.password,
-//         u.status AS current_status,
-//         u.created_at AS registration_date,
-//         p.full_name,
-//         p.phone,
-//         p.gender,
-//         p.marital_status,
-//         p.address,
-//         p.profession,
-//         p.skills,
-//         p.interests,
-//         p.about,
-//         p.city,
-//         p.headline,
-//         p.dob,
-//         p.age,
-//         p.education,
-//         p.company,
-//         p.experience,
-//         p.is_submitted,
-//         p.updated_at
-//       FROM users u
-//       LEFT JOIN profiles p
-//       ON u.id = p.user_id
-//       ORDER BY u.created_at DESC;
-//     `;
-
-//     const { rows: userDetails } = await pool.query(query2);
-
-//     // ✅ Response with both datasets
-//     return res.status(200).json({
-//       status: "success",
-//       message: "Users and detailed profile data fetched successfully",
-//       users,        // short data for list
-//       userDetails,  // full detailed info
-//     });
-
-//     // ⚙️ If you want to render in EJS instead of JSON:
-//     // res.render("admin/users", { users, userDetails });
-
-//   } catch (error) {
-//     console.error("Error fetching users:", error);
-//     return res.status(500).json({
-//       status: "error",
-//       message: "Failed to fetch users",
-//       error: error.message,
-//     });
-//   }
-// };
 
 
 
@@ -301,60 +336,6 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-
-// // get All User Details
-// export const getAllUserDetails = async (req, res) => {
-//   let {id} = req.params;
-//   try {
-//     const query = `
-//       SELECT 
-//         u.id AS user_id,
-//         u.email,
-//         u.password,
-//         u.status AS current_status,
-//         u.created_at AS registration_date,
-//         p.full_name,
-//         p.phone,
-//         p.gender,
-//         p.marital_status,
-//         p.address,
-//         p.profession,
-//         p.skills,
-//         p.interests,
-//         p.about,
-//         p.city,
-//         p.headline,
-//         p.dob,
-//         p.age,
-//         p.education,
-//         p.company,
-//         p.experience,
-//         p.is_submitted,
-//         p.updated_at
-//       FROM users u
-//       LEFT JOIN profiles p
-//       ON u.id = p.user_id
-//       ORDER BY u.created_at DESC;
-//     `;
-
-//     const { rows: userDetails } = await pool.query(query);
-//     console.log("user",userDetails);
-
-//     return res.status(200).json({
-//       status: "success",
-//       message: "Detailed user profiles fetched successfully",
-//       userDetails,
-//     });
-
-//   } catch (error) {
-//     console.error("Error fetching user details:", error);
-//     return res.status(500).json({
-//       status: "error",
-//       message: "Failed to fetch detailed profiles",
-//       error: error.message,
-//     });
-//   }
-// };
 
 
 
