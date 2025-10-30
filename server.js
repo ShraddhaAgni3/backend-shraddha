@@ -6,6 +6,7 @@ import { testConnection } from "./config/db.js";
 import cookieParser from "cookie-parser";
 import profileRoutes from "./routes/profileRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js"
+import searchRoutes from "./routes/searchRoutes.js";
 const app = express();
 dotenv.config();
 
@@ -20,7 +21,7 @@ app.use("/",authRoutes);
 app.use("/",profileRoutes);
 app.use("/",adminRoutes)
 
-
+app.use("/",searchRoutes); // Added search routes
 
 const port = process.env.PORT;
 
