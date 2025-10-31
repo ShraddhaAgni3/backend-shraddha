@@ -42,7 +42,7 @@ import profileRoutes from "./routes/profileRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import searchRoutes from "./routes/searchRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js"; // new
-
+import uploadRoutes from "./routes/uploadRoutes.js"; // new
 import { testConnection } from "./config/db.js";
 
 dotenv.config();
@@ -53,7 +53,7 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
-// ✅ Create HTTP + Socket.IO server
+//  Create HTTP + Socket.IO server
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -62,16 +62,16 @@ const io = new Server(server, {
   },
 });
 
-// ✅ Track online users (userId → socketId)
+//  Track online users (userId → socketId)
 const onlineUsers = new Map();
 
 io.on("connection", (socket) => {
-  console.log("🟢 User connected:", socket.id);
+  console.log(" User connected:", socket.id);
 
   // When frontend registers userId with socket
   socket.on("register_user", (userId) => {
     onlineUsers.set(userId, socket.id);
-    console.log(`✅ User ${userId} registered for notifications`);
+    console.log(` User ${userId} registered for notifications`);
   });
 
   socket.on("disconnect", () => {
@@ -81,11 +81,11 @@ io.on("connection", (socket) => {
         break;
       }
     }
-    console.log("🔴 User disconnected:", socket.id);
+    console.log(" User disconnected:", socket.id);
   });
 });
 
-// ✅ Function to send notification
+//  Function to send notification
 export const sendNotification = async (userId, title, message) => {
   try {
     // Save in notifications table
@@ -100,19 +100,21 @@ export const sendNotification = async (userId, title, message) => {
       io.to(socketId).emit("new_notification", { title, message });
     }
 
-    console.log(`📩 Notification sent to user ${userId}: ${title}`);
+    console.log(` Notification sent to user ${userId}: ${title}`);
   } catch (err) {
-    console.error("❌ Error sending notification:", err);
+    console.error(" Error sending notification:", err);
   }
 };
 
-// ✅ Existing routes — unchanged
+//  Existing routes — unchanged
 app.use("/", authRoutes);
 app.use("/", profileRoutes);
 app.use("/", adminRoutes);
 app.use("/", searchRoutes);
-app.use("/api/notifications",notificationRoutes); // new route for fetching notifications
+app.use("/api/notifications",notificationRoutes); // new route for fetching notifications 
 
+app.use("/api", uploadRoutes);
+app.use(express.urlencoded({ extended: true })); 
 const port = process.env.PORT || 5000;
 server.listen(port, () => console.log(`🚀 Server running on localhost:${port}`));
 
