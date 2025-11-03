@@ -44,7 +44,7 @@ import searchRoutes from "./routes/searchRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js"; // new
 import uploadRoutes from "./routes/uploadRoutes.js"; // new
 import { testConnection } from "./config/db.js";
-
+import chatRoutes from "./routes/chatRoutes.js"; // new
 dotenv.config();
 const app = express();
 testConnection();
@@ -114,8 +114,9 @@ app.use("/", searchRoutes);
 app.use("/api/notifications",notificationRoutes); // new route for fetching notifications 
 
 app.use("/api", uploadRoutes);
+app.use("/",chatRoutes); // new chat routes
 app.use(express.urlencoded({ extended: true })); 
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 3435;
 server.listen(port, () => console.log(`🚀 Server running on localhost:${port}`));
 
 export { app, io };
