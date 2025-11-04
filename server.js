@@ -1,33 +1,3 @@
-// import express from "express";
-// import dotenv from "dotenv";
-// import cors from "cors";
-// import authRoutes from "./routes/authRoutes.js"
-// import { testConnection } from "./config/db.js";
-// import cookieParser from "cookie-parser";
-// import profileRoutes from "./routes/profileRoutes.js";
-// import adminRoutes from "./routes/adminRoutes.js"
-// import searchRoutes from "./routes/searchRoutes.js";
-// const app = express();
-// dotenv.config();
-
-// testConnection();
-
-// app.use(cors());
-// app.use(express.json());
-// app.use(cookieParser());
-
-// // Routes
-// app.use("/",authRoutes);
-// app.use("/",profileRoutes);
-// app.use("/",adminRoutes)
-
-// app.use("/",searchRoutes); // Added search routes
-
-// const port = process.env.PORT;
-
-// app.listen(port,()=>console.log(`localhost:${port}`));
-
-
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -46,6 +16,7 @@ import uploadRoutes from "./routes/uploadRoutes.js"; // new
 import { testConnection } from "./config/db.js";
 import chatRoutes from "./routes/chatRoutes.js"; // new
 dotenv.config();
+
 const app = express();
 testConnection();
 
@@ -59,9 +30,10 @@ const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
-
+  console.log("✅ Socket connected");
 //  Track online users (userId → socketId)
 const onlineUsers = new Map();
 
@@ -73,6 +45,7 @@ io.on("connection", (socket) => {
     onlineUsers.set(userId, socket.id);
     console.log(` User ${userId} registered for notifications`);
   });
+   //console.log('Socket connected', socket.id);
 
   socket.on("disconnect", () => {
     for (const [userId, socketId] of onlineUsers.entries()) {
@@ -115,8 +88,9 @@ app.use("/api/notifications",notificationRoutes); // new route for fetching noti
 
 app.use("/api", uploadRoutes);
 app.use("/",chatRoutes); // new chat routes
-app.use(express.urlencoded({ extended: true })); 
+//app.use(express.urlencoded({ extended: true })); 
 const port = process.env.PORT || 3435;
 server.listen(port, () => console.log(`🚀 Server running on localhost:${port}`));
 
-export { app, io };
+export { app, io, onlineUsers };
+

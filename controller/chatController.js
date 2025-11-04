@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
 import { createClient } from "@supabase/supabase-js";
-import { io } from "../server.js"; 
+import { io,onlineUsers } from "../server.js"; 
 import { pool } from "../config/db.js";
 
 dotenv.config();
@@ -53,14 +53,15 @@ export const getAllUsers = async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch users" });
   }
 };
-
-// ---------------- Get Messages For Specific User ----------------
-export const getMessagesForUser = async (req, res) => {
-  const userId = 1
-  const myUserId = 2
-  if (!myUserId) return res.status(400).json({ error: "Missing myUserId" });
-
+    export const getMessagesForUser = async (req, res) => {
   try {
+    const { userId } = req.params; // URL param (receiver)
+    const myUserId = 6; // logged in user (sender)
+
+    if (!userId || !myUserId) {
+      return res.status(400).json({ error: "Missing userId or myUserId" });
+    }
+
     const { rows } = await pool.query(
       `SELECT * FROM messages 
        WHERE (sender_id = $1 AND receiver_id = $2)
@@ -68,6 +69,7 @@ export const getMessagesForUser = async (req, res) => {
        ORDER BY created_at ASC`,
       [myUserId, userId]
     );
+
     return res.json(rows);
   } catch (error) {
     console.error("Error fetching messages:", error.message);
