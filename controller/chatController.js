@@ -68,11 +68,15 @@ export const getAllUsers = async (req, res) => {
     res.status(500).json({ error: "Server error while searching users" });
   }
 };
+
+
+
 export const getMessagesForUser = async (req, res) => {
   try {
     const { userId } = req.params; // URL param (receiver)
-    const myUserId = 6; // logged in user (sender)
-
+    //const myUserId = 6; // logged in user (sender)
+    //const myUserId = req.query.myUserId; // logged in user (sender) from query param
+    const { myUserId } = req.query;
     if (!userId || !myUserId) {
       return res.status(400).json({ error: "Missing userId or myUserId" });
     }
