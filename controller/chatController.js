@@ -243,13 +243,13 @@ export const getMessagesForUser = async (req, res) => {
       [myUserId, userId]
     );
 
-    // ✅ 2️⃣ Mark notifications as read in message_notifications
-    // await pool.query(
-    //   `UPDATE messages
-    //    SET is_read = TRUE
-    //    WHERE receiver_id = $1 AND sender_id = $2 AND is_read = FALSE`,
-    //   [myUserId, userId]
-    // );
+    //✅ 2️⃣ Mark notifications as read in message
+    await pool.query(
+      `UPDATE messages
+       SET is_read = TRUE
+       WHERE receiver_id = $1 AND sender_id = $2 AND is_read = FALSE`,
+      [myUserId, userId]
+    );
 
     return res.json(rows);
   } catch (error) {
