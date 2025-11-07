@@ -1,5 +1,6 @@
 //import { pool } from "../db.js";
 import { pool } from "../config/db.js";
+
 // 🔹 Get all notifications for a user
 export const getNotifications = async (req, res) => {
   try {
@@ -44,5 +45,76 @@ export const createNotification = async (user_id, title, message) => {
     );
   } catch (error) {
     console.error("Error creating notification:", error);
+  }
+};
+
+
+
+
+// ✅ Mark all unread notifications as read for a user
+export const markNotificationsAsRead = async (req, res) => {
+  try {
+    const { userId } = req.params; // jis user ne notification dekha
+
+    if (!userId) {
+      return res.status(400).json({ error: "Missing userId" });
+    }
+
+    // ✅ Update all unread notifications to read (is_read = TRUE)
+    const result = await pool.query(
+      `UPDATE messages
+       SET is_read = TRUE
+       WHERE receiver_id = $1 AND is_read = FALSE
+       RETURNING *`,
+      [userId]
+    );
+
+    return res.json({
+      message: "All unread notifications marked as read",
+      updated: result.rowCount,
+      data: result.rows,
+    });
+  } catch (error) {
+    console.error("Error marking notifications as read:", error.message);
+    return res.status(500).json({ error: "Failed to mark notifications as read" });
+  }
+};
+
+
+// ✅ Fetch unread notifications
+export const getUnreadMessageNotifications = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const { rows } = await pool.query(
+      `SELECT * FROM messages
+       WHERE receiver_id = $1 AND is_read = FALSE
+       ORDER BY created_at DESC`,
+      [userId]
+    );
+      console.log("user",rows);
+    return res.json(rows);
+    
+  } catch (error) {
+    console.error("Error fetching unread notifications:", error.message);
+    return res.status(500).json({ error: "Failed to fetch notifications" });
+  }
+};
+
+// ✅ Get unread count (for badge)
+export const getUnreadCount = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const { rows } = await pool.query(
+      `SELECT COUNT(*) FROM messages
+       WHERE receiver_id = $1 AND is_read = FALSE`,
+      [userId]
+    );
+
+    return res.json({ unread_count: parseInt(rows[0].count) });
+  } catch (error) {
+    console.error("Error fetching unread count:", error.message);
+    return res.status(500).json({ error: "Failed to fetch unread count" });
   }
 };
