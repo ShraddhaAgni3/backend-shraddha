@@ -224,45 +224,49 @@ export const getAllUsers = async (req, res) => {
 //   }
 // };
 
-
 export const getMessagesForUser = async (req, res) => {
   try {
     const { userId } = req.params; // chat partner ID
     const { myUserId } = req.query; // logged-in user ID
 
+    // ✅ 1️⃣ Validation
     if (!userId || !myUserId) {
       return res.status(400).json({ error: "Missing userId or myUserId" });
     }
 
-    // ✅ 1️⃣ Fetch all messages between two users
+    // ✅ 2️⃣ Fetch all messages between two users (sorted oldest → newest)
     const { rows } = await pool.query(
-      `SELECT * FROM messages 
+      `SELECT * FROM messages
        WHERE (sender_id = $1 AND receiver_id = $2)
           OR (sender_id = $2 AND receiver_id = $1)
        ORDER BY created_at ASC`,
       [myUserId, userId]
     );
 
-    //✅ 2️⃣ Mark notifications as read in message
+    // ✅ 3️⃣ Mark all unread messages as read (for logged-in user)
     await pool.query(
       `UPDATE messages
        SET is_read = TRUE
-       WHERE receiver_id = $1 AND sender_id = $2 AND is_read = FALSE`,
+       WHERE receiver_id = $1 
+         AND sender_id = $2 
+         AND is_read = FALSE`,
       [myUserId, userId]
     );
 
-    return res.json(rows);
+    // ✅ 4️⃣ Return messages (frontend can now display updated messages)
+    return res.status(200).json(rows);
+
   } catch (error) {
     console.error("Error fetching messages:", error.message);
     return res.status(500).json({ error: "Failed to fetch messages" });
   }
 };
 
-   export const getAllMessages = async (req, res) => {
+export const getAllMessages = async (req, res) => {
   try {
     const { sender_id, receiver_id, content, attachment_url } = req.body;
 
-    // ✅ Validation
+    // ✅ 1️⃣ Validation
     if (!sender_id || !receiver_id || (!content && !attachment_url)) {
       return res.status(400).json({
         error:
@@ -270,27 +274,20 @@ export const getMessagesForUser = async (req, res) => {
       });
     }
 
-    // ✅ 1️⃣ Insert into messages table
+    // ✅ 2️⃣ Insert new message (is_read default = false)
     const { rows } = await pool.query(
-      `INSERT INTO messages (sender_id, receiver_id, content, attachment_url)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO messages (sender_id, receiver_id, content, attachment_url, is_read)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [sender_id, receiver_id, content, attachment_url]
+      [sender_id, receiver_id, content, attachment_url, false]
     );
 
     const savedMessage = rows[0];
 
-    // ✅ 2️⃣ Insert into message_notifications table (default is_read = false)
-    // await pool.query(
-    //   `INSERT INTO messages (sender_id, receiver_id, message)
-    //    VALUES ($1, $2, $3)`,
-    //   [sender_id, receiver_id, content || "📎 Attachment"]
-    // );
-
-    // ✅ 3️⃣ Emit new message to all sockets (real-time chat)
+    // ✅ 3️⃣ Emit new message to all connected sockets (real-time chat)
     io.emit("new_message", savedMessage);
 
-    // ✅ 4️⃣ If receiver online, send notification in real-time
+    // ✅ 4️⃣ If receiver is online, send direct notification
     const receiverSocketId = onlineUsers.get(receiver_id);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("message_notification", {
@@ -300,13 +297,14 @@ export const getMessagesForUser = async (req, res) => {
       });
     }
 
-    return res.json(savedMessage);
+    // ✅ 5️⃣ Send success response
+    return res.status(201).json(savedMessage);
+
   } catch (error) {
     console.error("Error saving message:", error.message);
     return res.status(500).json({ error: "Failed to save message" });
   }
 };
-
 
 // // ---------------- Add Reaction ----------------
 // export const addReaction = async (req, res) => {
@@ -344,7 +342,9 @@ export const getMessagesForUser = async (req, res) => {
 //   }
 // };
 
-   //import { io, onlineUsers, sendNotification } from "../server.js"; // ✅ import existing socket and helper
+   
+
+
 
 // ---------------- Add Reaction ----------------
 export const addReaction = async (req, res) => {
@@ -433,6 +433,38 @@ export const getAllReactions = async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch reactions" });
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // export const downloadFile = async (req, res) => {
