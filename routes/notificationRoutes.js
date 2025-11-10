@@ -1,5 +1,5 @@
 import express from "express";
-import { getNotifications, getUnreadCount, getUnreadMessageNotifications, markAsRead, markNotificationsAsRead } from "../controller/notificationController.js";
+import { getNotifications, markAsRead, markNotificationsAsRead } from "../controller/notificationController.js";
 
 const router = express.Router();
 
@@ -12,10 +12,10 @@ router.put("/read/:id", markAsRead);
 
 
 // 🟢 GET → All unread message notifications
-router.get("/unread/:userId", getUnreadMessageNotifications);
+//router.get("/unread/:userId", getUnreadMessageNotifications);
 
 // 🟢 GET → Unread count (for badge)
-router.get("/count/:userId", getUnreadCount);
+//router.get("/count/:userId", getUnreadCount);
 router.put("/read/messages/:userId", markNotificationsAsRead);
 export default router;
 
