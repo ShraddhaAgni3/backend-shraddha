@@ -35,7 +35,23 @@ export const registerUser = async (req, res) => {
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-
+/////
+     // ✅ Fetch configuration setting
+    const configResult = await pool.query(
+      "SELECT member_approval FROM configuration LIMIT 1"
+    );
+    console.log("Configuration query result:", configResult);
+    const approval = configResult.rows[0]?.member_approval || 0; // default manual
+         
+        console.log("Member approval setting:", approval);
+    // ✅ Apply your IF condition (automatic / manual)
+    let userStatus;
+    if (approval == 1) {
+      userStatus = "automatic"; // auto approval  
+    } else {
+      userStatus = "manual"; // manual approval
+    }
+/////
     // Insert user
     const userQuery = `
       INSERT INTO users (email, password)
@@ -104,8 +120,7 @@ export const registerUser = async (req, res) => {
     res.status(500).json({ error: "Internal server error." });
   }
 };
-
-
+ 
 export async function loginUser(req, res) {
   try {
     const { email, password } = req.body;
