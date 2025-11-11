@@ -40,129 +40,6 @@ export const adminLogin = async (req, res) => {
   }
 };
 
-// //  Approve User
-// export const approveUser=async(req,res)=>{
-//   const approvedUser=req.body;
-  
-//     const updateQuery=`UPDATE users SET status='Approve', approved_by=$1, updated_at=NOW() WHERE id=$2 RETURNING *`;
-//     const values=[approvedUser.approved_by,approvedUser.id];
-//     try{
-//       const result=await pool.query(updateQuery,values);
-//       if(result.rows.length===0){
-//         return res.status(404).json({message:"User not found"});
-//       }
-//       const {reason, ...userWithoutReason}=result.rows[0];
-//       return res.status(200).json({
-//         status: "success",
-//         message: "User approved successfully",
-//         user: userWithoutReason,
-//       });
-//     }catch(error){
-//       console.error("Error approving user:",error);
-//       return res.status(500).json({message:"Internal server error"});
-//     }
-  
-// }
-// //  Put User On Hold
-// export const onHoldUser = async (req, res) => {
-//   try {
-//     const { user_id, reason } = req.body;
-
-//     // 🔸 Validate required field
-//     if (!user_id) {
-//       return res.status(400).json({
-//         message: "user_id is required",
-//       });
-//     }
-
-//     // 🔸 Update user status to on_hold
-//     const updateQuery = `
-//       UPDATE users
-//       SET status = 'On Hold',
-//           reason = $1,
-//           updated_at = NOW()
-//       WHERE id = $2::integer
-//       RETURNING id, status, reason, updated_at
-//     `;
-
-//     // Only two parameters match $1 and $2
-//     const values = [reason || null, user_id];
-
-//     const result = await pool.query(updateQuery, values);
-
-//     // 🔸 Handle if user not found
-//     if (result.rows.length === 0) {
-//       return res.status(404).json({
-//         message: "User not found",
-//       });
-//     }
-
-//     // 🔸 Success response
-//     return res.status(200).json({
-      
-//       message: "User placed on hold",
-//       user: result.rows[0],
-//     });
-//   } catch (error) {
-//     console.error("Error placing user on hold:", error);
-//     return res.status(500).json({
-//       message: "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
-
-// //  Deactivate User
-// export const deactivateUser = async (req, res) => {
-
-//   try {
-//     const { user_id, reason } = req.body;
-
-//     // 🔹 Validate required fields
-//     if (!user_id) {
-//       return res.status(400).json({
-//         message: "user_id is required",
-//       });
-//     }
-
-//     // 🔹 Update user status to 'deactivate'
-//     const updateQuery = `
-//       UPDATE users
-//       SET status = 'Deactivate',
-//           reason = $1
-//       WHERE id = $2::integer
-//       RETURNING id, status, reason
-//     `;
-
-//     const values = [reason || null, user_id];
-//     const result = await pool.query(updateQuery, values);
-
-//     // 🔹 If no user found
-//     if (result.rows.length === 0) {
-//       return res.status(404).json({
-//         message: "User not found",
-//       });
-//     }
-
-//     // 🔹 Success response
-//     return res.status(200).json({
-//       status: "success",
-//       message: "User deactivate successfully",
-//       user: result.rows[0],
-//     });
-//   } catch (error) {
-//     console.error("Error deactivating user:", error);
-//     return res.status(500).json({
-//       message: "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
-
-
-
-
-
 //  Approve User
 export const approveUser = async (req, res) => {
   const approvedUser = req.body;
@@ -281,16 +158,82 @@ export const deactivateUser = async (req, res) => {
   }
 };
 
+// // // ✅ controllers/adminController.js
+// export const getAllUsers = async (req, res) => {
+//   try {
+//     const query = `
+//       SELECT 
+//         u.id,
+//         u.email,
+//         u.password,
+//         u.status,
+//         u.created_at,
+//         u.updated_at,
+//         p.full_name,
+//         p.profession
+//       FROM users u
+//       LEFT JOIN profiles p
+//       ON u.id = p.user_id
+//       ORDER BY u.created_at DESC;
+//     `;
 
+//     const { rows: usersList } = await pool.query(query);
 
+//     const users = usersList.map((user) => ({
+//       id: user.id,
+//       full_name: user.full_name || null,
+//       email: user.email,
+//       password: user.password,
+//       profession: user.profession || null,
 
+//        const configResult = await pool.query(
+//       "SELECT member_approval FROM configuration LIMIT 1"
+//     );
 
+//     const approval = configResult.rows[0]?.member_approval || 1; // default manual 
 
+//     if (approval == 1) {
+//       status: user.status ? user.status.toLowerCase() : "Approve" // approve 1
+//     }
+//        else{
+//          status: user.status ? user.status.toLowerCase() : "in process" // 0 in process
+//        }
+  
+//       createdAt: user.created_at,
+//       updatedAt: user.updated_at,
+//     }));
+
+//     return res.status(200).json({
+//       status: "success",
+//       message: "Users fetched successfully",
+//       users,
+//     });
+
+//   } catch (error) {
+//     console.error("Error fetching users:", error);
+//     return res.status(500).json({
+//       status: "error",
+//       message: "Failed to fetch users",
+//       error: error.message,
+//     });
+//   }
+// };
 
 
 // ✅ controllers/adminController.js
+//import { pool } from "../config/db.js";
+
 export const getAllUsers = async (req, res) => {
   try {
+    // 🔹 Fetch approval method from configuration
+    const configResult = await pool.query(
+      "SELECT member_approval FROM configurations LIMIT 1"
+    );
+
+    // const approval = configResult.rows[0]?.member_approval; //  no default
+          const approval = Number(configResult.rows[0]?.member_approval );
+       
+    // 🔹 Fetch users and their profiles
     const query = `
       SELECT 
         u.id,
@@ -302,24 +245,37 @@ export const getAllUsers = async (req, res) => {
         p.full_name,
         p.profession
       FROM users u
-      LEFT JOIN profiles p
-      ON u.id = p.user_id
+      LEFT JOIN profiles p ON u.id = p.user_id
       ORDER BY u.created_at DESC;
     `;
 
     const { rows: usersList } = await pool.query(query);
+         
+    // 🔹 Prepare clean response list
+    const users = usersList.map((user) => {
+      let status;
 
-    const users = usersList.map((user) => ({
-      id: user.id,
-      full_name: user.full_name || null,
-      email: user.email,
-      password: user.password,
-      profession: user.profession || null,
-      status: user.status ? user.status.toLowerCase() : "in process",
-      createdAt: user.created_at,
-      updatedAt: user.updated_at,
-    }));
-
+      if (Number(approval) === 1) {
+        // Auto approval mode
+        status = user.status ? user.status.toLowerCase() : "approve";
+      } else {
+        // Manual approval mode
+        status = user.status ? user.status.toLowerCase() : "in process";
+      }
+      console.log("user", status);
+      return {
+        id: user.id,
+        full_name: user.full_name || null,
+        email: user.email,
+        password: user.password,
+        profession: user.profession || null,
+        status,
+        createdAt: user.created_at,
+        updatedAt: user.updated_at,
+      };
+    });
+    console.log("users", users);
+    // ✅ Send response
     return res.status(200).json({
       status: "success",
       message: "Users fetched successfully",
@@ -335,8 +291,6 @@ export const getAllUsers = async (req, res) => {
     });
   }
 };
-
-
 
 
 // ✅ Get Specific User Details by ID
