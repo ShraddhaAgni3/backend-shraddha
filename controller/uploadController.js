@@ -3,8 +3,8 @@ import express from "express";
 import {pool} from "../config/db.js";  
 import { v2 as cloudinary } from "cloudinary";
 //import db from "../config/db.js";
-//import db from "../db.js";  // ✅ Add this line at the top
 
+// ✅ Controller: Upload Image to Cloudinary
 export  const uploadImage = async (req, res) => {
   try {
     if (!req.file) {

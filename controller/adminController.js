@@ -159,8 +159,6 @@ export const deactivateUser = async (req, res) => {
 };
 
 // ✅ controllers/adminController.js
-//import { pool } from "../config/db.js";
-
 export const getAllUsers = async (req, res) => {
   try {
     // 🔹 Fetch approval method from configuration
