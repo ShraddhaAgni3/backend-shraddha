@@ -110,10 +110,12 @@ dotenv.config();
 // import pool from "../db.js";
 // import { sendNotification } from "../utils/notifications.js";
 
+// New code rof register 
 export const registerUser = async (req, res) => {
   try {
     const {
-      full_name,
+      first_name,    // ✅ Changed from full_name
+      last_name,     // ✅ New field
       email,
       password,
       profession,
@@ -121,9 +123,11 @@ export const registerUser = async (req, res) => {
       marital_status,
     } = req.body;
 
-    // 🔹 Basic validation
-    if (!full_name || !email || !password || !profession) {
-      return res.status(400).json({ error: "Please fill all required fields." });
+    // 🔹 Basic validation - UPDATED
+    if (!first_name || !last_name || !email || !password || !profession) {
+      return res.status(400).json({ 
+        error: "Please fill all required fields including first name and last name." 
+      });
     }
 
     // 🔹 Check if user already exists
@@ -134,7 +138,7 @@ export const registerUser = async (req, res) => {
 
     // 🔹 Fetch approval configuration
     const configResult = await pool.query("SELECT member_approval FROM configurations LIMIT 1");
-    const approval = configResult.rows[0]?.member_approval ?? 0; // Default 0 = manual
+    const approval = configResult.rows[0]?.member_approval ?? 0;
 
     // 🔹 Decide user status based on configuration
     const userStatus = Number(approval) === 1 ? "Approve" : "In Process";
@@ -152,18 +156,19 @@ export const registerUser = async (req, res) => {
     const result = await pool.query(userQuery, userValues);
     const user_id = result.rows[0].id;
 
-    // 🔹 Insert profile
+    // 🔹 Insert profile - UPDATED
     const profileQuery = `
       INSERT INTO profiles (
-        user_id, full_name, marital_status,
+        user_id, first_name, last_name, marital_status,
         profession, interests, is_submitted
       ) 
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING id, user_id, full_name, marital_status, profession, interests, created_at;
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id, user_id, first_name, last_name, marital_status, profession, interests, created_at;
     `;
     const profileValues = [
       user_id,
-      full_name,
+      first_name,      // ✅ New
+      last_name,       // ✅ New
       marital_status,
       profession,
       JSON.stringify(interests),
@@ -174,14 +179,15 @@ export const registerUser = async (req, res) => {
     const user = {
       email: result.rows[0].email,
       status: result.rows[0].status,
-      profile_info: profileResult.rows[0],
+      profile_info: profileResult.rows[0], // ✅ Automatically includes first_name, last_name
     };
 
-    // 🔹 Create payload for tokens
+    // 🔹 Create payload for tokens - UPDATED
     const payload = {
       user_id,
       email: user.email,
-      full_name: profileResult.rows[0].full_name,
+      first_name: profileResult.rows[0].first_name,  // ✅ Changed
+      last_name: profileResult.rows[0].last_name,    // ✅ New
       profession: profileResult.rows[0].profession,
       marital_status: profileResult.rows[0].marital_status,
       status: user.status,
@@ -216,6 +222,8 @@ export const registerUser = async (req, res) => {
   }
 };
 
+// // for login User-----------------------------------------**
+
 export async function loginUser(req, res) {
   try {
     const { email, password } = req.body;
@@ -238,7 +246,7 @@ export async function loginUser(req, res) {
     }
 
     const profileQuery = `
-      SELECT id, user_id, full_name, profession, phone, marital_status,
+      SELECT id, user_id, first_name, last_name, profession, phone, marital_status,  // ✅ full_name -> first_name, last_name
              address, skills, interests, about, city
       FROM profiles
       WHERE user_id = $1
@@ -257,7 +265,8 @@ export async function loginUser(req, res) {
       user_id: user_profile.user_id,
       email: user_profile.email,
       phone: user_profile.phone,
-      full_name: user_profile.full_name,
+      first_name: user_profile.first_name,  // full_name -> first_name
+      last_name: user_profile.last_name,    //  New field
       profession: user_profile.profession,
       marital_status: user_profile.marital_status,
       address: user_profile.address,
@@ -280,7 +289,10 @@ export async function loginUser(req, res) {
 
     return res.status(200).json({
       message: "Login successful",
-      user_profile,
+      user_profile: {
+        ...user_profile,
+        // ✅ first_name and last_name automatically included
+      },
       status: user.status,
       accessToken,
       refreshToken,
@@ -291,44 +303,6 @@ export async function loginUser(req, res) {
   }
 }
 
-// Forgot Password
-export const forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
-    const user = await pool.query("SELECT * FROM users WHERE email = $1", [
-      email,
-    ]);
-
-    if (!user.rows.length) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    // generate reset token (valid for 15 mins)
-    const token = jwt.sign({ email }, process.env.JWT_SECRET, {
-      expiresIn: "15m",
-    });
-
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
-
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Password Reset Request",
-      html: `
-        <p>You requested to reset your password.</p>
-        <p>Click below link to reset your password (valid for 15 minutes):</p>
-        <a href="${resetLink}" target="_blank">${resetLink}</a>
-      `,
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    res.json({ message: "Password reset link sent to your email." });
-  } catch (error) {
-    console.error("Error sending reset link:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-};
 
 // Reset Password
 export const resetPassword = async (req, res) => {
