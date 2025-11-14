@@ -158,71 +158,7 @@ export const deactivateUser = async (req, res) => {
   }
 };
 
-// // // ✅ controllers/adminController.js
-// export const getAllUsers = async (req, res) => {
-//   try {
-//     const query = `
-//       SELECT 
-//         u.id,
-//         u.email,
-//         u.password,
-//         u.status,
-//         u.created_at,
-//         u.updated_at,
-//         p.full_name,
-//         p.profession
-//       FROM users u
-//       LEFT JOIN profiles p
-//       ON u.id = p.user_id
-//       ORDER BY u.created_at DESC;
-//     `;
-
-//     const { rows: usersList } = await pool.query(query);
-
-//     const users = usersList.map((user) => ({
-//       id: user.id,
-//       full_name: user.full_name || null,
-//       email: user.email,
-//       password: user.password,
-//       profession: user.profession || null,
-
-//        const configResult = await pool.query(
-//       "SELECT member_approval FROM configuration LIMIT 1"
-//     );
-
-//     const approval = configResult.rows[0]?.member_approval || 1; // default manual 
-
-//     if (approval == 1) {
-//       status: user.status ? user.status.toLowerCase() : "Approve" // approve 1
-//     }
-//        else{
-//          status: user.status ? user.status.toLowerCase() : "in process" // 0 in process
-//        }
-  
-//       createdAt: user.created_at,
-//       updatedAt: user.updated_at,
-//     }));
-
-//     return res.status(200).json({
-//       status: "success",
-//       message: "Users fetched successfully",
-//       users,
-//     });
-
-//   } catch (error) {
-//     console.error("Error fetching users:", error);
-//     return res.status(500).json({
-//       status: "error",
-//       message: "Failed to fetch users",
-//       error: error.message,
-//     });
-//   }
-// };
-
-
 // ✅ controllers/adminController.js
-//import { pool } from "../config/db.js";
-
 export const getAllUsers = async (req, res) => {
   try {
     // 🔹 Fetch approval method from configuration
