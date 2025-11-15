@@ -333,8 +333,10 @@ export const updateProfile = async (req, res) => {
       pincode,
       company_type,
       position,
-                        // ✅ added
+                      // ✅ added
      } = req.body;
+     console.log("Body:", req.body);
+
 
     if (!email || !first_name || !last_name || !dob || !age) {
       return res.status(400).json({ message: "Email, First name, Last name, DOB and Age are required" });
@@ -342,6 +344,9 @@ export const updateProfile = async (req, res) => {
 
     const { id } = req.user;
     const imageUrl = req.file ? req.file.path : null;
+
+    console.log("File:", req.file);
+
 
     const updateProfileQuery = `
       UPDATE profiles
