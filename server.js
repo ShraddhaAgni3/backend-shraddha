@@ -10,7 +10,7 @@ import { pool } from "./config/db.js"; // ✅ Use your existing DB connection
 import authRoutes from "./routes/authRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
-import searchRoutes from "./routes/searchRoutes.js";
+//import searchRoutes from "./routes/searchRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js"; // new
 import uploadRoutes from "./routes/uploadRoutes.js"; // new
 import { testConnection } from "./config/db.js";
@@ -84,7 +84,7 @@ export const sendNotification = async (userId, title, message) => {
 app.use("/", authRoutes);
 app.use("/", profileRoutes);
 app.use("/", adminRoutes);
-app.use("/", searchRoutes);
+//app.use("/", searchRoutes);
 app.use("/api/notifications",notificationRoutes); // new route for fetching notifications 
 
 app.use("/api", uploadRoutes);
