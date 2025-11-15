@@ -158,6 +158,148 @@ export const deactivateUser = async (req, res) => {
   }
 };
 
+
+
+// // ✅ controllers/adminController.js
+// export const getAllUsers = async (req, res) => {
+//   try {
+//     // 🔹 Fetch approval method from configuration
+//     const configResult = await pool.query(
+//       "SELECT member_approval FROM configurations LIMIT 1"
+//     );
+
+//     // const approval = configResult.rows[0]?.member_approval; //  no default
+//           const approval = Number(configResult.rows[0]?.member_approval );
+       
+//     // 🔹 Fetch users and their profiles
+//     const query = `
+//       SELECT 
+//         u.id,
+//         u.email,
+//         u.password,
+//         u.status,
+//         u.created_at,
+//         u.updated_at,
+//         p.full_name,
+//         p.profession
+//       FROM users u
+//       LEFT JOIN profiles p ON u.id = p.user_id
+//       ORDER BY u.created_at DESC;
+//     `;
+
+//     const { rows: usersList } = await pool.query(query);
+         
+//     // 🔹 Prepare clean response list
+//     const users = usersList.map((user) => {
+//       let status;
+
+//       if (Number(approval) === 1) {
+//         // Auto approval mode
+//         status = user.status ? user.status.toLowerCase() : "approve";
+//       } else {
+//         // Manual approval mode
+//         status = user.status ? user.status.toLowerCase() : "in process";
+//       }
+//       console.log("user", status);
+//       return {
+//         id: user.id,
+//         full_name: user.full_name || null,
+//         email: user.email,
+//         password: user.password,
+//         profession: user.profession || null,
+//         status,
+//         createdAt: user.created_at,
+//         updatedAt: user.updated_at,
+//       };
+//     });
+//     console.log("users", users);
+//     // ✅ Send response
+//     return res.status(200).json({
+//       status: "success",
+//       message: "Users fetched successfully",
+//       users,
+//     });
+
+//   } catch (error) {
+//     console.error("Error fetching users:", error);
+//     return res.status(500).json({
+//       status: "error",
+//       message: "Failed to fetch users",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
+// // ✅ Get Specific User Details by ID
+// export const getAllUserDetails = async (req, res) => {
+//   try {
+//     const { id } = req.params; // URL se user id
+//     if (!id) {
+//       return res.status(400).json({
+//         status: "error",
+//         message: "User ID is required",
+//       });
+//     }
+
+//     const query = `
+//       SELECT 
+//         u.id AS user_id,
+//         u.email,
+//         u.password,
+//         u.status AS current_status,
+//         u.created_at AS registration_date,
+//         p.full_name,
+//         p.phone,
+//         p.gender,
+//         p.marital_status,
+//         p.address,
+//         p.profession,
+//         p.skills,
+//         p.interests,
+//         p.about,
+//         p.city,
+//         p.headline,
+//         p.dob,
+//         p.age,
+//         p.education,
+//         p.company,
+//         p.experience,
+//         p.is_submitted,
+//         p.updated_at
+//       FROM users u
+//       LEFT JOIN profiles p
+//       ON u.id = p.user_id
+//       WHERE u.id = $1
+//       ORDER BY u.created_at DESC;
+//     `;
+
+//     const { rows } = await pool.query(query, [id]);
+
+//     if (rows.length === 0) {
+//       return res.status(404).json({
+//         status: "error",
+//         message: "User not found",
+//       });
+//     }
+
+//     return res.status(200).json({
+//       status: "success",
+//       message: "Detailed user profile fetched successfully",
+//       user: rows[0],
+//     });
+
+//   } catch (error) {
+//     console.error("Error fetching user details:", error);
+//     return res.status(500).json({
+//       status: "error",
+//       message: "Failed to fetch detailed profiles",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
 // ✅ controllers/adminController.js
 export const getAllUsers = async (req, res) => {
   try {
@@ -166,9 +308,8 @@ export const getAllUsers = async (req, res) => {
       "SELECT member_approval FROM configurations LIMIT 1"
     );
 
-    // const approval = configResult.rows[0]?.member_approval; //  no default
-          const approval = Number(configResult.rows[0]?.member_approval );
-       
+    const approval = Number(configResult.rows[0]?.member_approval);
+
     // 🔹 Fetch users and their profiles
     const query = `
       SELECT 
@@ -178,7 +319,8 @@ export const getAllUsers = async (req, res) => {
         u.status,
         u.created_at,
         u.updated_at,
-        p.full_name,
+        p.first_name,
+        p.last_name,
         p.profession
       FROM users u
       LEFT JOIN profiles p ON u.id = p.user_id
@@ -186,22 +328,21 @@ export const getAllUsers = async (req, res) => {
     `;
 
     const { rows: usersList } = await pool.query(query);
-         
+
     // 🔹 Prepare clean response list
     const users = usersList.map((user) => {
       let status;
 
       if (Number(approval) === 1) {
-        // Auto approval mode
         status = user.status ? user.status.toLowerCase() : "approve";
       } else {
-        // Manual approval mode
         status = user.status ? user.status.toLowerCase() : "in process";
       }
-      console.log("user", status);
+
       return {
         id: user.id,
-        full_name: user.full_name || null,
+        first_name: user.first_name || null,
+        last_name: user.last_name || null,
         email: user.email,
         password: user.password,
         profession: user.profession || null,
@@ -210,7 +351,7 @@ export const getAllUsers = async (req, res) => {
         updatedAt: user.updated_at,
       };
     });
-    console.log("users", users);
+
     // ✅ Send response
     return res.status(200).json({
       status: "success",
@@ -232,7 +373,8 @@ export const getAllUsers = async (req, res) => {
 // ✅ Get Specific User Details by ID
 export const getAllUserDetails = async (req, res) => {
   try {
-    const { id } = req.params; // URL se user id
+    const { id } = req.params;
+
     if (!id) {
       return res.status(400).json({
         status: "error",
@@ -247,7 +389,8 @@ export const getAllUserDetails = async (req, res) => {
         u.password,
         u.status AS current_status,
         u.created_at AS registration_date,
-        p.full_name,
+        p.first_name,
+        p.last_name,
         p.phone,
         p.gender,
         p.marital_status,
@@ -257,10 +400,15 @@ export const getAllUserDetails = async (req, res) => {
         p.interests,
         p.about,
         p.city,
+        p.country,
+        p.pincode,
         p.headline,
         p.dob,
         p.age,
         p.education,
+        p.company_type,
+        p.position,
+        p.state,
         p.company,
         p.experience,
         p.is_submitted,
@@ -296,8 +444,6 @@ export const getAllUserDetails = async (req, res) => {
     });
   }
 };
-
-
 
 
 
