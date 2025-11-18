@@ -6,6 +6,7 @@ import { pool } from "../config/db.js";
 import { searchUsers } from "../config/db.js";
 import cloudinary from "../config/cloudinaryConfig.js";
 import { createNotification } from "./notificationController.js";
+//import {  getRecentChats as dbGetRecentChats } from "../config/db.js";
 dotenv.config();
 
 // ✅ Initialize Supabase
@@ -371,6 +372,24 @@ export const getAllReactions = async (req, res) => {
   }
 };
 
+
+
+// export const getRecentChats = async (req, res) => {
+//   try {
+//     const { myUserId } = req.params;
+
+//     if (!myUserId) {
+//       return res.status(400).json({ error: "Missing myUserId" });
+//     }
+
+//     const chats = await dbGetRecentChats(myUserId);
+
+//     return res.status(200).json(chats);
+//   } catch (err) {
+//     console.error("❌ Error loading recent chats:", err);
+//     return res.status(500).json({ error: "Failed to load recent chats" });
+//   }
+// };
 
 
 
