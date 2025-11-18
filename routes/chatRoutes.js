@@ -1,14 +1,14 @@
 import express from "express";
 import { uploadFile, getAllUsers, getMessagesForUser, getAllMessages, addReaction, getAllReactions } from "../controller/chatController.js";
-
+import { getRecentChats } from "../controller/chatController.js";
 
 import multer from "multer";
-//import { getRecentChats } from "../config/db.js";
 const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
 
 
-//router.get("/api/chats/recent/:myUserId", getRecentChats);
+
+router.get("/api/chats/recent/:myUserId", getRecentChats);
 
 // Chat / File / Reaction Routes
 router.post("/api/chat/upload", upload.single("file"), uploadFile);

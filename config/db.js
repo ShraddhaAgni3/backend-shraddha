@@ -198,70 +198,71 @@ export const getReactionsForConversation = async (userA, userB) => {
 
 
 
-// // ✅ Get WhatsApp-style Recent Chats
-// export const getRecentChats = async (myUserId) => {
-//   const q = `
-//     WITH chat_partners AS (
-//       SELECT 
-//         CASE 
-//           WHEN sender_id = $1 THEN receiver_id 
-//           ELSE sender_id 
-//         END AS user_id
-//       FROM messages
-//       WHERE sender_id = $1 OR receiver_id = $1
-//       GROUP BY user_id
-//     ),
 
-//     last_messages AS (
-//       SELECT 
-//         m.*,
-//         ROW_NUMBER() OVER (
-//           PARTITION BY 
-//             CASE 
-//               WHEN m.sender_id = $1 THEN m.receiver_id 
-//               ELSE m.sender_id 
-//             END
-//           ORDER BY m.created_at DESC
-//         ) AS rn
-//       FROM messages m
-//       WHERE sender_id = $1 OR receiver_id = $1
-//     ),
+// ✅ Get WhatsApp-style Recent Chats
+export const getRecentChats = async (myUserId) => {
+  const q = `
+    WITH chat_partners AS (
+      SELECT 
+        CASE 
+          WHEN sender_id = $1 THEN receiver_id 
+          ELSE sender_id 
+        END AS user_id
+      FROM messages
+      WHERE sender_id = $1 OR receiver_id = $1
+      GROUP BY user_id
+    ),
 
-//     unread_counts AS (
-//       SELECT 
-//         sender_id AS user_id,
-//         COUNT(*) AS unread_count
-//       FROM messages
-//       WHERE receiver_id = $1 AND is_read = FALSE
-//       GROUP BY sender_id
-//     )
+    last_messages AS (
+      SELECT 
+        m.*,
+        ROW_NUMBER() OVER (
+          PARTITION BY 
+            CASE 
+              WHEN m.sender_id = $1 THEN m.receiver_id 
+              ELSE m.sender_id 
+            END
+          ORDER BY m.created_at DESC
+        ) AS rn
+      FROM messages m
+      WHERE sender_id = $1 OR receiver_id = $1
+    ),
 
-//     SELECT 
-//       u.id AS user_id,
-//       INITCAP(SPLIT_PART(u.email, '@', 1)) AS name,
-//       u.email,
+    unread_counts AS (
+      SELECT 
+        sender_id AS user_id,
+        COUNT(*) AS unread_count
+      FROM messages
+      WHERE receiver_id = $1 AND is_read = FALSE
+      GROUP BY sender_id
+    )
 
-//       lm.content AS last_message,
-//       lm.created_at AS last_message_time,
+    SELECT 
+      u.id AS user_id,
+      INITCAP(SPLIT_PART(u.email, '@', 1)) AS name,
+      u.email,
 
-//       COALESCE(uc.unread_count, 0) AS unread_count
+      lm.content AS last_message,
+      lm.created_at AS last_message_time,
 
-//     FROM chat_partners cp
-//     JOIN users u ON u.id = cp.user_id
+      COALESCE(uc.unread_count, 0) AS unread_count
 
-//     LEFT JOIN last_messages lm 
-//       ON lm.rn = 1 
-//      AND (
-//         (lm.sender_id = $1 AND lm.receiver_id = u.id)
-//         OR
-//         (lm.sender_id = u.id AND lm.receiver_id = $1)
-//      )
+    FROM chat_partners cp
+    JOIN users u ON u.id = cp.user_id
 
-//     LEFT JOIN unread_counts uc ON uc.user_id = u.id
+    LEFT JOIN last_messages lm 
+      ON lm.rn = 1 
+     AND (
+        (lm.sender_id = $1 AND lm.receiver_id = u.id)
+        OR
+        (lm.sender_id = u.id AND lm.receiver_id = $1)
+     )
 
-//     ORDER BY last_message_time DESC NULLS LAST;
-//   `;
+    LEFT JOIN unread_counts uc ON uc.user_id = u.id
 
-//    const { rows } = await pool.query(q, [myUserId]);
-//   return rows;
-// };
+    ORDER BY last_message_time DESC NULLS LAST;
+  `;
+
+  const { rows } = await pool.query(q, [myUserId]);
+  return rows;
+};
