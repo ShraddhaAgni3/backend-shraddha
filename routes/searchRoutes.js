@@ -1,7 +1,7 @@
-// import express from "express";
-// import { searchProfiles } from "../controller/searchController.js";
-// const router = express.Router();    
+import express from "express";
+import { searchProfiles } from "../controller/searchController.js";
+const router = express.Router();    
 
-// router.get("/search", searchProfiles);
+router.get("/search", searchProfiles);
 
-// export default router;
+export default router;
