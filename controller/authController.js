@@ -2,7 +2,7 @@ import { pool } from "../config/db.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
-import { transporter } from "../mailer.js";
+//import { transporter } from "../mailer.js";
 import { sendNotification } from "../server.js";
 dotenv.config();
 
@@ -187,6 +187,8 @@ export async function loginUser(req, res) {
   }
 }
 
+
+
 // Forgot Password
 export const forgotPassword = async (req, res) => {
   try {
@@ -248,3 +250,4 @@ export const resetPassword = async (req, res) => {
     res.status(400).json({ error: "Invalid or expired token." });
   }
 };
+
