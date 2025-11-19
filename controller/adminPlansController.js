@@ -42,12 +42,13 @@ export const createPlan = async (req, res) => {
             people_message_limit,
             audio_call_limit,
             people_details_visibility,
+            type,
         } = req.body;
 
         const q = `
       INSERT INTO plans 
-      (name, price, duration, video_call_limit, people_search_limit, people_message_limit, audio_call_limit, people_details_visibility)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      (name, price, duration, video_call_limit, people_search_limit, people_message_limit, audio_call_limit, people_details_visibility,type)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
       RETURNING id;
     `;
 
@@ -60,6 +61,7 @@ export const createPlan = async (req, res) => {
             people_message_limit,
             audio_call_limit,
             people_details_visibility,
+            type,
         ]);
 
         res.status(201).json({
@@ -86,14 +88,15 @@ export const updatePlan = async (req, res) => {
             people_message_limit,
             audio_call_limit,
             people_details_visibility,
+            type,
         } = req.body;
 
         const q = `
       UPDATE plans
       SET name=$1, price=$2, duration=$3, video_call_limit=$4,
           people_search_limit=$5, people_message_limit=$6,
-          audio_call_limit=$7, people_details_visibility=$8
-      WHERE id=$9;
+          audio_call_limit=$7, people_details_visibility=$8, type=$9
+      WHERE id=$10;
     `;
 
         await pool.query(q, [
@@ -105,6 +108,7 @@ export const updatePlan = async (req, res) => {
             people_message_limit,
             audio_call_limit,
             people_details_visibility,
+            type,
             id,
         ]);
 
