@@ -1,5 +1,5 @@
 import express from "express";
-import { uploadFile, getAllUsers, getMessagesForUser, getAllMessages, addReaction, getAllReactions } from "../controller/chatController.js";
+import { uploadFile, getAllUsers, getMessagesForUser, getAllMessages, addReaction, getAllReactions,deleteMessage } from "../controller/chatController.js";
 import { getRecentChats } from "../controller/chatController.js";
 
 import multer from "multer";
@@ -17,6 +17,8 @@ router.get("/api/messages/:userId", getMessagesForUser); //
 router.post("/api/messages", getAllMessages); //
 router.post("/api/reactions", addReaction);
 router.get("/api/reactions", getAllReactions);//
+
+router.delete("/api/messages/:id", deleteMessage); //
 
 export default router;
 

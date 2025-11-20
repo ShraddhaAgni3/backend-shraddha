@@ -1,17 +1,30 @@
 import { pool } from "../config/db.js";
 
-// ---------------------- Get Cart Items By User ----------------------
 export const getCartItems = async (req, res) => {
     try {
         const { user_id } = req.params;
 
         const q = `
-            SELECT c.id, c.plan_id, p.name, p.price, p.duration, p.type
-            FROM cart c
-            JOIN plans p ON c.plan_id = p.id
-            WHERE c.user_id = $1
-            ORDER BY c.id ASC;
-        `;
+      SELECT 
+        c.*, -- all columns from cart
+        json_build_object(
+          'id', p.id,
+          'name', p.name,
+          'price', p.price,
+          'duration', p.duration,
+          'video_call_limit', p.video_call_limit,
+          'people_search_limit', p.people_search_limit,
+          'people_message_limit', p.people_message_limit,
+          'audio_call_limit', p.audio_call_limit,
+          'type', p.type,
+          'created_at', p.created_at,
+          'updated_at', p.updated_at
+        ) AS plan
+      FROM cart c
+      JOIN plans p ON c.plan_id = p.id
+      WHERE c.user_id = $1
+      ORDER BY c.id ASC;
+    `;
 
         const { rows } = await pool.query(q, [user_id]);
         res.json(rows);

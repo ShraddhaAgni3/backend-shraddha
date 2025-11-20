@@ -396,7 +396,49 @@ export const getRecentChats = async (req, res) => {
 
 
 
+export const deleteMessage = async (req, res) => {
+  try {
+    const messageId = req.params.id;
+    const userId = req.query.userId;
 
+    if (!messageId || !userId) {
+      return res.status(400).json({ error: "Missing messageId or userId" });
+    }
+
+    // Check if message exists
+    const msg = await pool.query(
+      "SELECT * FROM messages WHERE id = $1",
+      [messageId]
+    );
+
+    if (msg.rows.length === 0) {
+      return res.status(404).json({ error: "Message not found" });
+    }
+
+    // Only sender can delete
+    if (String(msg.rows[0].sender_id) !== String(userId)) {
+      return res.status(403).json({ error: "Not allowed to delete this message" });
+    }
+
+    // Delete the message
+    const deleted = await pool.query(
+      "DELETE FROM messages WHERE id = $1 RETURNING *",
+      [messageId]
+    );
+
+    // Emit real-time delete event
+    io.emit("message_deleted", { id: messageId });
+
+    return res.status(200).json({
+      success: true,
+      deleted: deleted.rows[0],
+    });
+
+  } catch (err) {
+    console.error("Delete message error:", err);
+    return res.status(500).json({ error: "Failed to delete message" });
+  }
+};
 
 
 
