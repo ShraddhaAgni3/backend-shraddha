@@ -5,28 +5,48 @@ import cookieParser from "cookie-parser";
 import http from "http";
 import { Server } from "socket.io";
 import { pool } from "./config/db.js"; // ✅ Use your existing DB connection
+import bodyParser from 'body-parser';
 
 // ✅ Import routes
 import authRoutes from "./routes/authRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
+// Admin imports
 import adminRoutes from "./routes/adminRoutes.js";
 import searchRoutes from "./routes/searchRoutes.js";
-import notificationRoutes from "./routes/notificationRoutes.js"; // new
-import uploadRoutes from "./routes/uploadRoutes.js"; // new
+import notificationRoutes from "./routes/notificationRoutes.js"; 
+import uploadRoutes from "./routes/uploadRoutes.js"; 
 import { testConnection } from "./config/db.js";
-import chatRoutes from "./routes/chatRoutes.js"; // new
+// Chat imports
+import chatRoutes from "./routes/chatRoutes.js"; 
 import cartRoutes from "./routes/cart.js";
+// Plans imports
 import customerPlansRoutes from "./routes/customerPlans.js";
 import adminPlansRoutes from "./routes/adminPlans.js";
 
+// Payment imports
+import paymentRoutes from "./routes/paymentRoutes.js";
+import { stripeWebhook } from "./controller/paymentController.js";
+
+// Load environment variables
 dotenv.config();
 
 const app = express();
 testConnection();
 
+// -------------------- Stripe Webhook Route ------------------------
+app.post(
+  "/payments/webhook",
+  express.raw({ type: "application/json" }),
+  stripeWebhook
+);
+
+// Middleware
 app.use(cors());
+app.use(bodyParser.json());
 app.use(express.json());
 app.use(cookieParser());
+
+
 
 //  Create HTTP + Socket.IO server
 const server = http.createServer(app);
@@ -89,7 +109,9 @@ app.use("/", authRoutes);
 app.use("/", profileRoutes);
 app.use("/", adminRoutes);
 app.use("/", searchRoutes);
-app.use("/api/notifications",notificationRoutes); // new route for fetching notifications 
+app.use("/api/notifications",notificationRoutes); // new route for fetching notifications
+// Payment routes 
+app.use("/payments", paymentRoutes);
 
 app.use("/api", uploadRoutes);
 app.use("/",chatRoutes); // new chat routes

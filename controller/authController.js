@@ -2,11 +2,12 @@ import { pool } from "../config/db.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
-//import { transporter } from "../mailer.js";
 import { sendNotification } from "../server.js";
+//import { sendEmail } from "../emailService.js"; 
+
 dotenv.config();
 
-// New code rof register 
+// New code register 
 export const registerUser = async (req, res) => {
   try {
     const {
@@ -190,43 +191,36 @@ export async function loginUser(req, res) {
 
 
 // Forgot Password
+
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await pool.query("SELECT * FROM users WHERE email = $1", [
-      email,
-    ]);
 
+    const user = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     if (!user.rows.length) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ error: 'User not found' });
     }
 
-    // generate reset token (valid for 15 mins)
-    const token = jwt.sign({ email }, process.env.JWT_SECRET, {
-      expiresIn: "15m",
-    });
-
+    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '15m' });
     const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
+    await sendEmail({
       to: email,
-      subject: "Password Reset Request",
+      subject: 'Password Reset Request',
       html: `
-        <p>You requested to reset your password.</p>
-        <p>Click below link to reset your password (valid for 15 minutes):</p>
+        <p>You requested a password reset.</p>
+        <p>Click the link below to reset your password (valid for 15 minutes):</p>
         <a href="${resetLink}" target="_blank">${resetLink}</a>
       `,
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
-
-    res.json({ message: "Password reset link sent to your email." });
+    res.json({ message: 'Password reset link sent to your email.' });
   } catch (error) {
-    console.error("Error sending reset link:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 // Reset Password
 export const resetPassword = async (req, res) => {
