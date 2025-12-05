@@ -256,6 +256,7 @@ export const getAllUserDetails = async (req, res) => {
         p.profession,
         p.skills,
         p.interests,
+        p.hobbies,
         p.about,
         p.city,
         p.country,

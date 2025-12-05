@@ -27,6 +27,8 @@ import adminPlansRoutes from "./routes/adminPlans.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import { stripeWebhook } from "./controller/paymentController.js";
 
+import userMatchesRoute from './routes/userMatchesRoute.js';
+
 // Load environment variables
 dotenv.config();
 
@@ -120,6 +122,8 @@ app.use("/",chatRoutes); // new chat routes
 app.use("/api/cart", cartRoutes);
 app.use("/api/plans", customerPlansRoutes);
 app.use("/api/admin/plans", adminPlansRoutes);
+// User Matches Route
+app.use('/api/my_matches', userMatchesRoute);
 
 //app.use(express.urlencoded({ extended: true })); 
 const port = process.env.PORT || 3435;
