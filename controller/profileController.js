@@ -26,7 +26,7 @@ export const updateProfile = async (req, res) => {
       pincode,
       company_type,
       position,
-                      // ✅ added
+      hobbies,                // ✅ added
      } = req.body;
      console.log("Body:", req.body);
 
@@ -65,11 +65,12 @@ export const updateProfile = async (req, res) => {
         company = $19,
         company_type = $20,       -- ✅ added
         experience = $21,
-        position = $22,           -- ✅ added
-        image_url = COALESCE($23, image_url),
+        position = $22,     
+        hobbies = $23,                -- ✅ added
+        image_url = COALESCE($24, image_url),
         updated_at = NOW(),
         is_submitted = true
-      WHERE user_id = $24
+      WHERE user_id = $25
       
       RETURNING *;
     `;
@@ -97,6 +98,7 @@ export const updateProfile = async (req, res) => {
       company_type,      // ✅ added
       experience,
       position,
+      JSON.stringify(hobbies),
       imageUrl,
       id
     ];
@@ -160,6 +162,7 @@ export const getProfile = async (req, res) => {
         profession,
         skills,
         interests,
+        hobbies,
         about,
         city,
         country,
@@ -199,6 +202,7 @@ export const getProfile = async (req, res) => {
       pincode: profile.pincode || null,
       skills: profile.skills || null,
       interests: profile.interests || null,
+      hobbies: profile.hobbies || null, 
       about: profile.about || null,
       city: profile.city || null,
       headline: profile.headline || null,
