@@ -73,88 +73,6 @@ export const getAllUsers = async (req, res) => {
 };
 
 
-
-// export const getMessagesForUser = async (req, res) => {
-//   try {
-//     const { userId } = req.params; // URL param (receiver)
-//    // const myUserId = 6; // logged in user (sender)
-//     //const myUserId = req.query.myUserId; // logged in user (sender) from query param
-//     const { myUserId } = req.query;
-//     if (!userId || !myUserId) {
-//       return res.status(400).json({ error: "Missing userId or myUserId" });
-//     }
-
-//     const { rows } = await pool.query(
-//       `SELECT * FROM messages 
-//        WHERE (sender_id = $1 AND receiver_id = $2)
-//           OR (sender_id = $2 AND receiver_id = $1)
-//        ORDER BY created_at ASC`,
-//       [myUserId, userId]
-//     );
-
-//          // ✅ 2️⃣ Mark message notifications as read for current user
-//     await pool.query(
-//       `UPDATE message_notifications
-//        SET is_read = TRUE
-//        WHERE receiver_id = $1 AND sender_id = $2 AND is_read = FALSE`,
-//       [myUserId, userId]
-//     );
-
-//     return res.json(rows);
-    
-//   } catch (error) {
-//     console.error("Error fetching messages:", error.message);
-//     return res.status(500).json({ error: "Failed to fetch messages" });
-//   }
-// };
-
-// // ---------------- Get All Messages ----------------
-// export const getAllMessages = async (req, res) => {
-//   try {
-//     const { sender_id, receiver_id, content, attachment_url } = req.body;
-
-//     if (!sender_id || !receiver_id || (!content && !attachment_url)) {
-//       return res.status(400).json({
-//         error: "sender_id, receiver_id and at least one of content or attachment_url are required"
-//       });
-//     }
-
-//     const { rows } = await pool.query(
-//       `INSERT INTO messages (sender_id, receiver_id, content, attachment_url)
-//        VALUES ($1, $2, $3, $4)
-//        RETURNING *`,
-//       [sender_id, receiver_id, content, attachment_url]
-//     );
-
-//     const savedMessage = rows[0];
-
-//       // ✅ 2️⃣ Ab message_notification table me entry daalo
-//     await pool.query(
-//       `INSERT INTO message(sender_id, receiver_id, message)
-//        VALUES ($1, $2, $3)`,
-//       [sender_id, receiver_id, content || "📎 Attachment"]
-//     );
-
-//     // ✅ Send message to all connected clients
-//     io.emit("new_message", savedMessage);
-
-//       // ✅ 4️⃣ (Optional) Agar receiver online hai to unko notification bhej do
-//     const receiverSocketId = onlineUsers.get(receiver_id);
-//     if (receiverSocketId) {
-//       io.to(receiverSocketId).emit("message_notification", {
-//         from: sender_id,
-//         message: content || "📎 Attachment",
-//         timestamp: savedMessage.created_at
-//       });
-//     }
-
-//     return res.json(savedMessage);
-//   } catch (error) {
-//     console.error("Error saving message:", error.message);
-//     return res.status(500).json({ error: "Failed to save message" });
-//   }
-// };
-
 export const getMessagesForUser = async (req, res) => {
   try {
     const { userId } = req.params; // chat partner ID
@@ -191,52 +109,7 @@ export const getMessagesForUser = async (req, res) => {
     console.error("Error fetching messages:", error.message);
     return res.status(500).json({ error: "Failed to fetch messages" });
   }
-};
-
-// export const getAllMessages = async (req, res) => {
-//   try {
-//     const { sender_id, receiver_id, content, attachment_url } = req.body;
-
-//     // ✅ 1️⃣ Validation
-//     if (!sender_id || !receiver_id || (!content && !attachment_url)) {
-//       return res.status(400).json({
-//         error:
-//           "sender_id, receiver_id and at least one of content or attachment_url are required",
-//       });
-//     }
-
-//     // ✅ 2️⃣ Insert new message (is_read default = false)
-//     const { rows } = await pool.query(
-//       `INSERT INTO messages (sender_id, receiver_id, content, attachment_url, is_read)
-//        VALUES ($1, $2, $3, $4, $5)
-//        RETURNING *`,
-//       [sender_id, receiver_id, content, attachment_url, false]
-//     );
-
-//     const savedMessage = rows[0];
-
-//     // ✅ 3️⃣ Emit new message to all connected sockets (real-time chat)
-//     io.emit("new_message", savedMessage);
-
-//     // ✅ 4️⃣ If receiver is online, send direct notification
-//     const receiverSocketId = onlineUsers.get(receiver_id);
-//     if (receiverSocketId) {
-//       io.to(receiverSocketId).emit("message_notification", {
-//         from: sender_id,
-//         message: content || "📎 Attachment",
-//         timestamp: savedMessage.created_at,
-//       });
-//     }
-
-//     // ✅ 5️⃣ Send success response
-//     return res.status(201).json(savedMessage);
-
-//   } catch (error) {
-//     console.error("Error saving message:", error.message);
-//     return res.status(500).json({ error: "Failed to save message" });
-//   }
-// };
- 
+}; 
     // 🟢 Send a new message + create notification
 export const getAllMessages = async (req, res) => {
   try {
@@ -373,10 +246,7 @@ export const getAllReactions = async (req, res) => {
 };
 
 
-
-
-
-
+// ---------------- Get Recent Chats ----------------
 export const getRecentChats = async (req, res) => {
   try {
     const { myUserId } = req.params;
@@ -394,8 +264,7 @@ export const getRecentChats = async (req, res) => {
   }
 };
 
-
-
+// ---------------- Delete Message ----------------
 export const deleteMessage = async (req, res) => {
   try {
     const messageId = req.params.id;
@@ -459,30 +328,5 @@ export const deleteMessage = async (req, res) => {
 
 
 
-
-// export const downloadFile = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-
-//     const result = await pool.query(
-//       "SELECT filename, mime_type, data FROM uploads WHERE id = $1",
-//       [id]
-//     );
-
-//     if (result.rows.length === 0) {
-//       return res.status(404).json({ error: "File not found" });
-//     }
-
-//     const file = result.rows[0];
-
-//     res.setHeader("Content-Type", file.mime_type);
-//     res.setHeader("Content-Disposition", `inline; filename="${file.filename}"`);
-
-//     return res.send(file.data);
-//   } catch (err) {
-//     console.error("Download error:", err);
-//     return res.status(500).json({ error: "Failed to fetch file" });
-//   }
-// };
 
 

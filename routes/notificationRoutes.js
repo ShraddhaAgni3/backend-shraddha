@@ -3,11 +3,9 @@ import { getNotifications, markAsRead, markNotificationsAsRead } from "../contro
 
 const router = express.Router();
 
-// 📩 Get all notifications for a user
-router.get("/:user_id", getNotifications);
+router.get("/:user_id", getNotifications); // Get Notifications by User ID
+router.put("/read/:id", markAsRead); // Mark Notification as Read
+router.put("/read/messages/:userId", markNotificationsAsRead);  // Mark All Notifications as Read for User  
 
-// ✅ Mark a notification as read
-router.put("/read/:id", markAsRead);
-router.put("/read/messages/:userId", markNotificationsAsRead);
 export default router;
 

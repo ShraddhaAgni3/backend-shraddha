@@ -4,11 +4,8 @@ import { removeProfilePicture, saveProfileImage, uploadImage } from "../controll
 
 const router = express.Router();
 
-router.post("/upload", upload.single("image"), uploadImage);
-
-router.post("/saveProfileImage", saveProfileImage);
-
-router.post("/remove/profile-picture", removeProfilePicture);
-
+router.post("/upload", upload.single("image"), uploadImage); // Upload Image
+router.post("/saveProfileImage", saveProfileImage); // Save Profile Image
+router.post("/remove/profile-picture", removeProfilePicture); // Remove Profile Picture
 
 export default router;
