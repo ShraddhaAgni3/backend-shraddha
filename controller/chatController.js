@@ -110,6 +110,8 @@ export const getMessagesForUser = async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch messages" });
   }
 }; 
+
+ 
     // 🟢 Send a new message + create notification
 export const getAllMessages = async (req, res) => {
   try {
@@ -151,6 +153,7 @@ export const getAllMessages = async (req, res) => {
       `INSERT INTO notifications (user_id, title, message, type, is_read, created_at)
        VALUES ($1, $2, $3, $4, FALSE, NOW())`,
       [
+        
         receiver_id,
         "New Message 💬",
         `User ${sender_id} sent you a new message.`,
@@ -167,6 +170,8 @@ export const getAllMessages = async (req, res) => {
   }
 };
  
+
+
 // ---------------- Add Reaction ----------------
 export const addReaction = async (req, res) => {
   const { message_id, user_id, emoji } = req.body;
