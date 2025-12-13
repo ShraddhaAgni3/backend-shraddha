@@ -10,7 +10,7 @@ export const getUserMatches = async (req, res) => {
 
     try {
         // Get the main user
-        const userResult = await pool.query("SELECT * FROM profiles WHERE id = $1", [userId]);
+        const userResult = await pool.query("SELECT * FROM profiles WHERE profiles.user_id = $1", [userId]);
         const user = userResult.rows[0];
         if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -30,7 +30,7 @@ export const getUserMatches = async (req, res) => {
         const hobbiesArr = toArray(user.hobbies);
 
         // Fetch all other users
-        const allUsersResult = await pool.query("SELECT * FROM profiles WHERE id != $1", [userId]);
+        const allUsersResult = await pool.query("SELECT * FROM profiles WHERE user_id != $1", [userId]);
         const allUsers = allUsersResult.rows;
 
         // Calculate match scores
