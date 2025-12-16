@@ -28,6 +28,9 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import { stripeWebhook } from "./controller/paymentController.js";
 
 import userMatchesRoute from './routes/userMatchesRoute.js';
+// Blog imports
+import blogRoutes from "./routes/blog.routes.js";
+
 
 // Load environment variables
 dotenv.config();
@@ -47,6 +50,9 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json());
 app.use(cookieParser());
+
+// Serve static files from "uploads" directory
+//app.use("/uploads", express.static("uploads"));
 
 
 
@@ -124,6 +130,10 @@ app.use("/api/plans", customerPlansRoutes);
 app.use("/api/admin/plans", adminPlansRoutes);
 // User Matches Route
 app.use('/api/my_matches', userMatchesRoute);
+
+// Blog routes
+app.use("/api/blogs", blogRoutes);
+
 
 //app.use(express.urlencoded({ extended: true })); 
 const port = process.env.PORT || 3435;
