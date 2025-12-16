@@ -2,7 +2,6 @@ import express from "express";
 //import { cloudinary } from "../config/cloudinaryConfig.js";
 import {pool} from "../config/db.js";  
 import { v2 as cloudinary } from "cloudinary";
-//import db from "../config/db.js";
 
 // ✅ Controller: Upload Image to Cloudinary
 export  const uploadImage = async (req, res) => {
