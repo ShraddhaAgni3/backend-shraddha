@@ -171,6 +171,12 @@ export async function loginUser(req, res) {
     const refreshToken = jwt.sign(payload, refresh_secret_key, {
       expiresIn: "7d",
     });
+     
+     req.session.user = {
+     id: user.id,
+    email: user.email
+   };
+
 
     return res.status(200).json({
       message: "Login successful",
