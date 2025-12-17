@@ -6,6 +6,7 @@ import http from "http";
 import { Server } from "socket.io";
 import { pool } from "./config/db.js"; // ✅ Use your existing DB connection
 import bodyParser from 'body-parser';
+import session from "express-session";
 
 // ✅ Import routes
 import authRoutes from "./routes/authRoutes.js";
@@ -31,6 +32,8 @@ import userMatchesRoute from './routes/userMatchesRoute.js';
 // Blog imports
 import blogRoutes from "./routes/blog.routes.js";
 
+import userProfileRoute from "./routes/usersRoute.js";
+import recentActivitiesRoute from "./routes/recentAtivitiesRoute.js";
 
 // Load environment variables
 dotenv.config();
@@ -54,7 +57,19 @@ app.use(cookieParser());
 // Serve static files from "uploads" directory
 //app.use("/uploads", express.static("uploads"));
 
-
+app.use(
+  session({
+    name: "app_session",
+    secret: process.env.SESSION_SECRET_KEY,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: false, // localhost ke liye
+      maxAge: 1000 * 60 * 60 * 24 // 1 day
+    }
+  })
+);
 
 //  Create HTTP + Socket.IO server
 const server = http.createServer(app);
@@ -133,6 +148,11 @@ app.use('/api/my_matches', userMatchesRoute);
 
 // Blog routes
 app.use("/api/blogs", blogRoutes);
+
+// User Profile Routes
+app.use("/api/users", userProfileRoute);
+
+app.use("/api/view", recentActivitiesRoute);
 
 
 //app.use(express.urlencoded({ extended: true })); 
