@@ -1,36 +1,31 @@
 import { pool } from "../config/db.js";
 // Recent Activities (Add New Viewer)
+
 export const recentActivitiesAddNewViewer = async (req, res) => {
-  try {
-    const { viewerId } = req.params;
+    try {
+        const viewerId = req.user.id // Replace with logged-in user's ID once authentication added
+        const { viewedId } = req.params;
 
-    // 🟢 Logged-in user ID from session
-    const viewedId = req.session?.user?.id;
-    
-    if (!viewedId) {
-      return res.status(401).json({ message: "User not logged in" });
+        // Insert or update if already exists
+        const query = `
+            INSERT INTO profile_views (viewer_id, viewed_id)
+            VALUES ($1, $2)
+            ON CONFLICT (viewer_id, viewed_id)
+            DO UPDATE SET viewed_at = NOW()
+            RETURNING *;`;
+
+        const result = await pool.query(query, [viewerId, viewedId]);
+
+        // Optional: log or return the new/updated record
+        console.log("Profile view recorded:", result.rows[0]);
+        res.json({ message: "Data inserted successfully user viewed profile", viewerId: viewerId, viewedId: viewedId });
+        // res.redirect(`/api/users/${viewerId}`); //Redirect to the user's profile data
+    } catch (err) {
+        console.error("Error inserting profile view:", err.message);
+        res.status(500).json({ message: err.message });
     }
+}
 
-    const query = `
-      INSERT INTO profile_views (viewer_id, viewed_id)
-      VALUES ($1, $2)
-      ON CONFLICT (viewer_id, viewed_id)
-      DO UPDATE SET viewed_at = NOW()
-      RETURNING *;
-    `;
-
-    const result = await pool.query(query, [viewerId, viewedId]);
-
-    console.log("Profile view recorded:", result.rows[0]);
-
-    res.redirect(`/api/users/${viewerId}`);
-  } catch (err) {
-    console.error("Error inserting profile view:", err.message);
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// Recent Activities (Profile Viewers)
 export const recentViewers = async (req, res) => {
     let { userId } = req.params; // Current logged in user ID
     try {
@@ -47,8 +42,6 @@ export const recentViewers = async (req, res) => {
         ORDER BY pv.viewed_at DESC;` // It will take the viewers who see the profile of logged in user with in 24 hours viewers 
 
         const result = await pool.query(query, [userId]);
-
-        await pool.query(query, [userId]);
 
         res.json({
             newViewersCount: result.rows.length,
