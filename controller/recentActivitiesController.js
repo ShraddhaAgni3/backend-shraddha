@@ -3,6 +3,7 @@ import { pool } from "../config/db.js";
 
 export const recentActivitiesAddNewViewer = async (req, res) => {
     try {
+        
         const viewerId = req.user.id // Replace with logged-in user's ID once authentication added
         const { viewedId } = req.params;
 
@@ -21,7 +22,7 @@ export const recentActivitiesAddNewViewer = async (req, res) => {
         res.json({ message: "Data inserted successfully user viewed profile", viewerId: viewerId, viewedId: viewedId });
         // res.redirect(`/api/users/${viewerId}`); //Redirect to the user's profile data
     } catch (err) {
-        console.error("Error inserting profile view:", err.message);
+        console.error("Error inserting profile view:", err.message,err);
         res.status(500).json({ message: err.message });
     }
 }
@@ -32,12 +33,12 @@ export const recentViewers = async (req, res) => {
         // Step 1: Fetch new viewers since last profile check
         const query = `
         SELECT 
-        p.id AS viewer_id,
         p.*,
         pv.viewed_at
         FROM profile_views pv
-        JOIN profiles p ON pv.viewer_id = p.id
+        JOIN profiles p ON pv.viewer_id = p.user_id
         WHERE pv.viewed_id = $1
+        AND pv.viewer_id <> $1               -- exclude self-view
         AND pv.viewed_at > NOW() - INTERVAL '90 days'  
         ORDER BY pv.viewed_at DESC;` // It will take the viewers who see the profile of logged in user with in 24 hours viewers 
 

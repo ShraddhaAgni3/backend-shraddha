@@ -6,10 +6,10 @@ import upload from "../middleware/upload.js";
 
 const router = express.Router();
 
-router.use(validateAccessToken);
-router.post("/create", verifyAdminToken, upload.single("cover_image"), createArticle);
-router.put("/update/:id", verifyAdminToken, upload.single("cover_image"), updateArticle);
-router.delete("/delete/:id", verifyAdminToken, deleteArticle);
+
+router.post("/create", validateAccessToken, verifyAdminToken, upload.single("cover_image"), createArticle);
+router.put("/update/:id", validateAccessToken, verifyAdminToken, upload.single("cover_image"), updateArticle);
+router.delete("/delete/:id", validateAccessToken, verifyAdminToken, deleteArticle);
 
 router.get("/", getAllArticles);          // Public
 router.get("/:id", getSingleArticle);     // Public
