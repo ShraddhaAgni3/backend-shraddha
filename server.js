@@ -133,6 +133,7 @@ app.use("/", profileRoutes);
 app.use("/", adminRoutes);
 app.use("/", searchRoutes);
 app.use("/api/notifications",notificationRoutes); // new route for fetching notifications
+
 // Payment routes 
 app.use("/payments", paymentRoutes);
 
