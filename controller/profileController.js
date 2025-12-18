@@ -138,6 +138,7 @@ export const updateProfile = async (req, res) => {
 // 🟢 Get Profile
 export const getProfile = async (req, res) => {
   try {
+     
     const { id } = req.user;
 
     const userQuery = `
