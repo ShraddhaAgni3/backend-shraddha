@@ -1,12 +1,12 @@
 import { pool } from "../config/db.js";
-
+// Recent Activities (Add New Viewer)
 export const recentActivitiesAddNewViewer = async (req, res) => {
   try {
     const { viewerId } = req.params;
 
     // 🟢 Logged-in user ID from session
     const viewedId = req.session?.user?.id;
-
+    
     if (!viewedId) {
       return res.status(401).json({ message: "User not logged in" });
     }
@@ -30,7 +30,7 @@ export const recentActivitiesAddNewViewer = async (req, res) => {
   }
 };
 
-
+// Recent Activities (Profile Viewers)
 export const recentViewers = async (req, res) => {
     let { userId } = req.params; // Current logged in user ID
     try {
@@ -43,7 +43,7 @@ export const recentViewers = async (req, res) => {
         FROM profile_views pv
         JOIN profiles p ON pv.viewer_id = p.id
         WHERE pv.viewed_id = $1
-        AND pv.viewed_at > NOW() - INTERVAL '24*7 hours'  
+        AND pv.viewed_at > NOW() - INTERVAL '90 days'  
         ORDER BY pv.viewed_at DESC;` // It will take the viewers who see the profile of logged in user with in 24 hours viewers 
 
         const result = await pool.query(query, [userId]);
