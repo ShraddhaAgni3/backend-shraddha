@@ -1,4 +1,4 @@
-//import { pool } from "../db.js";
+
 import { pool } from "../config/db.js";
 // 🔹 Get all notifications for a user
 export const getNotifications = async (req, res) => {
@@ -77,4 +77,4 @@ export const markNotificationsAsRead = async (req, res) => {
 
 
 
-// 
+

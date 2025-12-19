@@ -4,7 +4,7 @@ import { pool } from "../config/db.js";
 export const recentActivitiesAddNewViewer = async (req, res) => {
     try {
         
-        const viewerId = req.user.id // Replace with logged-in user's ID once authentication added
+        const viewerId = req.user.id 
         const { viewedId } = req.params;
 
         // Insert or update if already exists
@@ -57,7 +57,7 @@ export const recentViewers = async (req, res) => {
 
 //Recent activities (Unread messages):-
 export const getUnreadMessagesCount = async (req, res) => {
-    const { userId } = req.params; // logged-in user's ID
+    const userId = req.user.id; // logged-in user's ID
 
     try {
         const result = await pool.query(
