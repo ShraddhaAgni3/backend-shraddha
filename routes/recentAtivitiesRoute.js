@@ -8,6 +8,6 @@ const router = express.Router();
 
 router.post("/viewers/:viewedId", validateAccessToken, recentActivitiesAddNewViewer);
 router.get("/:userId/recentViewers", recentViewers);
-router.get("/:userId/unreadMessages", getUnreadMessagesCount);
+router.get("/:userId/unreadMessages",validateAccessToken, getUnreadMessagesCount);
 
 export default router;
