@@ -106,7 +106,7 @@ dotenv.config();
 const { Pool } = pkg;
 
 // ✅ Connection string
-const connectionString = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
+const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
   console.error("❌ Please set SUPABASE_DB_URL or DATABASE_URL in .env");

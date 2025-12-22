@@ -159,16 +159,77 @@ export const deactivateUser = async (req, res) => {
 };
 
 // controllers/adminController.js
+// export const getAllUsers = async (req, res) => {
+//   try {
+//     // 🔹 Fetch approval method from configuration
+//     const configResult = await pool.query(
+//       "SELECT member_approval FROM configurations LIMIT 1"
+//     );
+
+//     const approval = Number(configResult.rows[0]?.member_approval);
+
+//     // 🔹 Fetch users and their profiles
+//     const query = `
+//       SELECT 
+//         u.id,
+//         u.email,
+//         u.password,
+//         u.status,
+//         u.created_at,
+//         u.updated_at,
+//         p.first_name,
+//         p.last_name,
+//         p.profession
+//       FROM users u
+//       LEFT JOIN profiles p ON u.id = p.user_id
+//       ORDER BY u.created_at DESC;
+//     `;
+
+//     const { rows: usersList } = await pool.query(query);
+
+//     // 🔹 Prepare clean response list
+//     const users = usersList.map((user) => {
+//       let status;
+
+//       if (Number(approval) === 1) {
+//         status = user.status ? user.status.toLowerCase() : "approve";
+//       } else {
+//         status = user.status ? user.status.toLowerCase() : "in process";
+//       }
+
+//       return {
+//         id: user.id,
+//         first_name: user.first_name || null,
+//         last_name: user.last_name || null,
+//         email: user.email,
+//         password: user.password,
+//         profession: user.profession || null,
+//         status,
+//         createdAt: user.created_at,
+//         updatedAt: user.updated_at,
+//       };
+//     });
+
+//     // ✅ Send response
+//     return res.status(200).json({
+//       status: "success",
+//       message: "Users fetched successfully",
+//       users,
+//     });
+
+//   } catch (error) {
+//     console.error("Error fetching users:", error);
+//     return res.status(500).json({
+//       status: "error",
+//       message: "Failed to fetch users",
+//       error: error.message,
+//     });
+//   }
+// };
+  
 export const getAllUsers = async (req, res) => {
   try {
-    // 🔹 Fetch approval method from configuration
-    const configResult = await pool.query(
-      "SELECT member_approval FROM configurations LIMIT 1"
-    );
-
-    const approval = Number(configResult.rows[0]?.member_approval);
-
-    // 🔹 Fetch users and their profiles
+    // 🔹 Fetch users and their profiles (NO configuration logic here)
     const query = `
       SELECT 
         u.id,
@@ -187,28 +248,18 @@ export const getAllUsers = async (req, res) => {
 
     const { rows: usersList } = await pool.query(query);
 
-    // 🔹 Prepare clean response list
-    const users = usersList.map((user) => {
-      let status;
-
-      if (Number(approval) === 1) {
-        status = user.status ? user.status.toLowerCase() : "approve";
-      } else {
-        status = user.status ? user.status.toLowerCase() : "in process";
-      }
-
-      return {
-        id: user.id,
-        first_name: user.first_name || null,
-        last_name: user.last_name || null,
-        email: user.email,
-        password: user.password,
-        profession: user.profession || null,
-        status,
-        createdAt: user.created_at,
-        updatedAt: user.updated_at,
-      };
-    });
+    // 🔹 Prepare response (direct DB status)
+    const users = usersList.map((user) => ({
+      id: user.id,
+      first_name: user.first_name || null,
+      last_name: user.last_name || null,
+      email: user.email,
+      password: user.password, // (admin view only)
+      profession: user.profession || null,
+      status: user.status, // ✅ DIRECT FROM DB
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+    }));
 
     // ✅ Send response
     return res.status(200).json({
@@ -226,6 +277,7 @@ export const getAllUsers = async (req, res) => {
     });
   }
 };
+
 
 
 // ✅ Get Specific User Details by ID
