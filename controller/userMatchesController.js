@@ -59,7 +59,7 @@ export const getUserMatches = async (req, res) => {
         matches.sort((a, b) => b.match_score - a.match_score);
 
         // Return top 10
-        return res.status(200).json(matches.slice(0, 10));
+        return res.status(200).json(matches)
     } catch (err) {
         console.error("Error in getUserMatches:", err);
         return res.status(500).json({ message: "Server error" });
