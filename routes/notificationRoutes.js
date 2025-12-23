@@ -11,3 +11,5 @@ router.put("/read/messages/:userId", markNotificationsAsRead);  // Mark All Noti
 
 export default router;
 
+
+

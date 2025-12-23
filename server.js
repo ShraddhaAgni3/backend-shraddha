@@ -34,6 +34,9 @@ import blogRoutes from "./routes/blog.routes.js";
 import userProfileRoute from "./routes/usersRoute.js";
 import recentActivitiesRoute from "./routes/recentAtivitiesRoute.js";
 
+import adminConfigRoutes from "./routes/adminConfigRoutes.js";  
+
+import planRoutes from "./routes/planRoutes.js";  
 // Load environment variables
 dotenv.config();
 
@@ -144,6 +147,12 @@ app.use("/api/blogs", blogRoutes);
 app.use("/api/users", userProfileRoute);
 
 app.use("/api/view", recentActivitiesRoute);
+
+// COnfiguration setting for member_approval
+app.use("/api/settings", adminConfigRoutes);
+
+// Plan status route
+app.use("/api", planRoutes);
 
 
 //app.use(express.urlencoded({ extended: true })); 
