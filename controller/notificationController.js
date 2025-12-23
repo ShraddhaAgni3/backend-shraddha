@@ -1,5 +1,5 @@
-
 import { pool } from "../config/db.js";
+
 // 🔹 Get all notifications for a user
 export const getNotifications = async (req, res) => {
   try {
@@ -74,6 +74,7 @@ export const markNotificationsAsRead = async (req, res) => {
     return res.status(500).json({ error: "Failed to mark notifications as read" });
   }
 };
+
 
 
 
