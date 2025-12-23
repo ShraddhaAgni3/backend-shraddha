@@ -37,6 +37,7 @@ import recentActivitiesRoute from "./routes/recentAtivitiesRoute.js";
 import adminConfigRoutes from "./routes/adminConfigRoutes.js";  
 
 import planRoutes from "./routes/planRoutes.js";  
+
 // Load environment variables
 dotenv.config();
 
