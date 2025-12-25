@@ -47,7 +47,7 @@ export const createNotification = async (user_id, title, message, type = "genera
   }
 };
 
-// 🔹 Mark all unread notifications as read for a user
+// // 🔹 Mark all unread notifications as read for a user
 export const markNotificationsAsRead = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -231,7 +231,7 @@ export const getChatMessages = async (req, res) => {
       FROM messages m
       JOIN profiles sender ON m.sender_id = sender.id
       JOIN users sender_user ON sender.user_id = sender_user.id
-      JOIN profiles receiver ON m.receiver_id = receiver.id
+      JOIN profiles receiver ON m.receiver_id = receiver.user_id
       JOIN users receiver_user ON receiver.user_id = receiver_user.id
       WHERE (m.sender_id = $1 AND m.receiver_id = $2)
       OR (m.sender_id = $2 AND m.receiver_id = $1)
@@ -240,6 +240,7 @@ export const getChatMessages = async (req, res) => {
 
     const result = await pool.query(selectQuery, [currUserId, senderId]);
 
+    console.log("Messages fetched:", result.rows);
     //To get the details(Like fullname, email, etc) of two users who are chating togther:-
     let query2 = `SELECT 
     u.id AS user_id, 
