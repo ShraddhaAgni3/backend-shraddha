@@ -76,7 +76,7 @@ export const getAllUsers = async (req, res) => {
 export const getMessagesForUser = async (req, res) => {
   try {
     const { userId } = req.params; // chat partner ID
-    const { myUserId } = req.query; // logged-in user ID
+    const { myUserId } = req.query; // logged-in user ID   // get it from token
 
     // ✅ 1️⃣ Validation
     if (!userId || !myUserId) {
@@ -135,6 +135,11 @@ export const getAllMessages = async (req, res) => {
 
     const savedMessage = rows[0];
 
+    const queryToGetSenderName = `SELECT first_name,last_name FROM profiles WHERE user_id = $1`;
+    const senderNameResult = await pool.query(queryToGetSenderName, [sender_id]);
+
+    const senderFullName = `${senderNameResult.rows[0].first_name} ${senderNameResult.rows[0].last_name}`;  
+
     // ✅ 3️⃣ Emit new message to all connected sockets (real-time chat)
     io.emit("new_message", savedMessage);
 
@@ -153,10 +158,9 @@ export const getAllMessages = async (req, res) => {
       `INSERT INTO notifications (user_id, title, message, type, is_read, created_at)
        VALUES ($1, $2, $3, $4, FALSE, NOW())`,
       [
-        
         receiver_id,
         "New Message 💬",
-        `User ${sender_id} sent you a new message.`,
+        `${senderFullName} sent you a new message.`,
         "Message", // type of notification
       ]
     );
