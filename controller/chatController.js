@@ -211,12 +211,25 @@ export const addReaction = async (req, res) => {
     const message = msgQuery.rows[0];
     const receiverId =
       message.sender_id === user_id ? message.receiver_id : message.sender_id;
+   ////
+        const userResult = await pool.query(
+      `SELECT first_name, last_name FROM profiles WHERE user_id = $1`,
+      [user_id]
+    );
+
+    const senderFullName = userResult.rows.length
+      ? `${userResult.rows[0].first_name} ${userResult.rows[0].last_name}`
+      : `User ${user_id}`;
+   /////
+      /////
+       const notificationMessage =
+      `${senderFullName} reacted with "${emoji}" on your message.`;
 
     // 3️⃣ Create notification (DB + bell icon)
     await createNotification(
       receiverId,
       "New Reaction 💬",
-      `User ${user_id} reacted with "${emoji}" on your message.`,
+      notificationMessage,
       "reaction"
     );
 
@@ -225,7 +238,7 @@ export const addReaction = async (req, res) => {
     if (socketId) {
       io.to(socketId).emit("new_notification", {
         title: "New Reaction 💬",
-        message: `User ${user_id} reacted with "${emoji}" on your message.`,
+        message: notificationMessage,
         reaction,
       });
 
@@ -233,7 +246,7 @@ export const addReaction = async (req, res) => {
       io.to(socketId).emit("new_reaction", reaction);
     }
 
-    console.log(`💬 Reaction added by user ${user_id}: ${emoji}`);
+    console.log(`💬 Reaction added by user ${notificationMessage} -> ${emoji}`);
     return res.json({ success: true, reaction });
   } catch (error) {
     console.error("❌ Error saving reaction:", error.message);
