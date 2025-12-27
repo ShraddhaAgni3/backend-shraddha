@@ -36,8 +36,7 @@ import recentActivitiesRoute from "./routes/recentAtivitiesRoute.js";
 
 import adminConfigRoutes from "./routes/adminConfigRoutes.js";  
 
-import planRoutes from "./routes/planRoutes.js";  
-
+import planRoutes from "./routes/planRoutes.js";
 // Load environment variables
 dotenv.config();
 
@@ -66,7 +65,7 @@ app.use(cookieParser());
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin:"*", 
     methods: ["GET", "POST"],
     credentials: true,
   },
