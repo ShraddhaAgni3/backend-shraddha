@@ -362,9 +362,9 @@ if (height_ft !== undefined || height_in !== undefined) {
       relationship_values,
       values_in_others,
       relationship_pace,
-      about_me,
       height,
       JSON.stringify(life_rhythms || {}),
+      about_me,
       JSON.stringify(ways_i_spend_time || {}),
       imageUrl,
       id,
@@ -683,7 +683,8 @@ const saveOrUpdateProfilePrompts = async (profileId, prompts) => {
     ON CONFLICT (profile_id, question_key)
     DO UPDATE SET 
       answer = EXCLUDED.answer,
-      updated_at = NOW();
+      updated_at = NOW()
+      RETURNING profile_id, question_key, answer;
   `;
 
   const results = [];
