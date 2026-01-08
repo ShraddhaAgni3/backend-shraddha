@@ -340,16 +340,15 @@ export const getUserMatches = async (req, res) => {
         });
 
         // 5️⃣ Filter relevant matches (score ≥ 7)
-        const relevantMatches = matches.filter((m) => m.match_score >= 7);
+        const relevantMatches = matches.filter((m) => m.match_score >= 5);
 
         // 6️⃣ Sort by score descending
         relevantMatches.sort((a, b) => b.match_score - a.match_score);
 
         // 7️⃣ Return results
-        return res.status(200).json({
-            totalRelevantMatches: relevantMatches.length,
-            suggestedMatches: relevantMatches,
-        });
+        return res.status(200).json(
+            relevantMatches
+        );
     } catch (err) {
         console.error("Error in getUserMatches:", err);
         return res.status(500).json({ message: "Server error" });
