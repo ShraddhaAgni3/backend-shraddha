@@ -30,10 +30,10 @@ export const registerUser = async (req, res) => {
       !username ||
       !about_me
     ) {
-      return res.status(400).json({
-        error:
-          "Please fill all required fields including first name, last name, username, and about me.",
-      });
+      // return res.status(400).json({
+      //   error:
+      //     "Please fill all required fields including first name, last name, username, and about me.",
+      // });
     }
 
     //
