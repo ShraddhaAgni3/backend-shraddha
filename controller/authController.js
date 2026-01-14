@@ -8,6 +8,7 @@ import { sendNotification } from "../server.js";
 dotenv.config();
 
 // New code register
+
 export const registerUser = async (req, res) => {
   try {
     let {
@@ -30,13 +31,12 @@ export const registerUser = async (req, res) => {
       !username ||
       !about_me
     ) {
+    }
       // return res.status(400).json({
       //   error:
       //     "Please fill all required fields including first name, last name, username, and about me.",
       // });
-    }
-
-    //
+      
     // const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
     // if (!usernameRegex.test(username)) {
     //   return res.status(400).json({
@@ -44,12 +44,10 @@ export const registerUser = async (req, res) => {
     //       "Username must be 3-30 characters and contain only letters, numbers, and underscores.",
     //   });
     // }
-    //
+// Normalize username (Instagram behavior)
+     username = username.trim().toLowerCase();
 
-    // Normalize username (Instagram behavior)
-    username = username.trim().toLowerCase();
-
-    // Reserved usernames (cannot be used)
+    // // Reserved usernames (cannot be used)
     const reservedUsernames = [
       "admin",
       "support",
