@@ -17,6 +17,8 @@ export const getCartItems = async (req, res) => {
           'people_message_limit', p.people_message_limit,
           'audio_call_limit', p.audio_call_limit,
           'type', p.type,
+          'description', p.description,
+          'billing_info', p.billing_info,
           'created_at', p.created_at,
           'updated_at', p.updated_at
         ) AS plan
@@ -27,13 +29,13 @@ export const getCartItems = async (req, res) => {
     `;
 
         const { rows } = await pool.query(q, [user_id]);
+        console.log(rows);
         res.json(rows);
     } catch (err) {
         console.error("Error fetching cart items:", err);
         res.status(500).json({ error: "Database error" });
     }
 };
-
 // ---------------------- Add Item to Cart ----------------------
 export const addToCart = async (req, res) => {
     try {
