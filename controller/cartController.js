@@ -29,7 +29,6 @@ export const getCartItems = async (req, res) => {
     `;
 
         const { rows } = await pool.query(q, [user_id]);
-        console.log(rows);
         res.json(rows);
     } catch (err) {
         console.error("Error fetching cart items:", err);
