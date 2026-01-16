@@ -35,6 +35,8 @@ import userProfileRoute from "./routes/usersRoute.js";
 import recentActivitiesRoute from "./routes/recentAtivitiesRoute.js";
 
 import adminConfigRoutes from "./routes/adminConfigRoutes.js";  
+//Importing configuration route
+import configRoutes from "./routes/configRoutes.js";
 
 import planRoutes from "./routes/planRoutes.js";
 // Load environment variables
@@ -133,6 +135,8 @@ app.use("/payments", paymentRoutes);
 app.use("/api", uploadRoutes);
 app.use("/",chatRoutes); // new chat routes
 
+//Configuration Routes:-
+app.use("/api/admin/configurations", configRoutes);
 // Routes
 app.use("/api/cart", cartRoutes);
 app.use("/api/plans", customerPlansRoutes);
@@ -153,6 +157,9 @@ app.use("/api/settings", adminConfigRoutes);
 
 // Plan status route
 app.use("/api", planRoutes);
+
+// Configuration routes
+
 
 
 //app.use(express.urlencoded({ extended: true })); 
