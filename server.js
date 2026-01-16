@@ -40,6 +40,7 @@ import configRoutes from "./routes/configRoutes.js";
 
 import planRoutes from "./routes/planRoutes.js";
 // Load environment variables
+import reportRoutes from "./routes/reportRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -158,7 +159,8 @@ app.use("/api/settings", adminConfigRoutes);
 // Plan status route
 app.use("/api", planRoutes);
 
-// Configuration routes
+// Admin Reports Route
+app.use("/api/admin/reports", reportRoutes);
 
 
 
