@@ -376,12 +376,17 @@ if (height_ft !== undefined || height_in !== undefined) {
       return res.status(404).json({ message: "Profile not found" });
     }
 
-    let savedPrompts = [];
-    if (prompts && Object.keys(prompts || {}).length > 0) {
-      savedPrompts = await saveOrUpdateProfilePrompts(
-        profileResult.rows[0].id,
-        prompts
-      );
+    // let savedPrompts = [];
+    // if (prompts && Object.keys(prompts || {}).length > 0) {
+    //   savedPrompts = await saveOrUpdateProfilePrompts(
+    //     profileResult.rows[0].id,
+    //     prompts
+    //   );
+    // }
+
+      let savedPrompts = [];
+    if (prompts && typeof prompts === "object" && Object.keys(prompts).length > 0) {
+      savedPrompts = await saveOrUpdateProfilePrompts(profileResult.rows[0].id, prompts);
     }
 
     const updateUserQuery = `
@@ -400,11 +405,19 @@ if (height_ft !== undefined || height_in !== undefined) {
     const { dob: removedDob, age: removedAge, ...safeProfile } =
       profileResult.rows[0];
 
+       const profileWithPrompts = {
+      ...safeProfile,
+      prompts: savedPrompts.reduce((acc, cur) => {
+        acc[cur.question_key] = cur.answer;
+        return acc;
+      }, {})
+    };
+
     return res.status(200).json({
       message: "Profile and email updated successfully",
       user: userResult.rows[0],
-      profile: safeProfile,
-      prompts: savedPrompts, // Uncomment if you want to return saved prompts
+      profile: profileWithPrompts,
+     // prompts: savedPrompts, // Uncomment if you want to return saved prompts
     });
   } catch (error) {
     console.error("Error updating profile and email:", error);
@@ -611,6 +624,7 @@ export const getProfile = async (req, res) => {
     }
 
     const combinedData = {
+      id: profile.id,
       user_id: user.id,
       email: user.email,
       first_name: profile.first_name || null,
@@ -686,16 +700,41 @@ export const getProfile = async (req, res) => {
 
 // 🟢 Save or Update Profile Prompts (Questions and Answers)
 //
-const saveOrUpdateProfilePrompts = async (profileId, prompts) => {
-  if (
-    !prompts ||
-    !prompts["question-key"] ||
-    typeof prompts["question-key"] !== "object"
-  ) {
-    return;
-  }
+// const saveOrUpdateProfilePrompts = async (profileId, prompts) => {
+//   if (
+//     !prompts ||
+//     !prompts["question-key"] ||
+//     typeof prompts["question-key"] !== "object"
+//   ) {
+//     return;
+//   }
 
-  const promptEntries = prompts["question-key"]; // Avoid variable name conflict
+//   const promptEntries = prompts["question-key"]; // Avoid variable name conflict
+
+//   const query = `
+//     INSERT INTO profile_prompts (profile_id, question_key, answer)
+//     VALUES ($1, $2, $3)
+//     ON CONFLICT (profile_id, question_key)
+//     DO UPDATE SET 
+//       answer = EXCLUDED.answer,
+//       updated_at = NOW()
+//       RETURNING profile_id, question_key, answer;
+//   `;
+
+//   const results = [];
+
+//   for (const [question_key, answer] of Object.entries(promptEntries)) {
+//     const { rows } = await pool.query(query, [
+//       profileId,
+//       question_key,
+//       answer,
+//     ]);
+//     results.push(rows[0]);
+//   }
+
+//   return results;
+const saveOrUpdateProfilePrompts = async (profileId, prompts) => {
+  if (!prompts || typeof prompts !== "object") return [];
 
   const query = `
     INSERT INTO profile_prompts (profile_id, question_key, answer)
@@ -704,24 +743,20 @@ const saveOrUpdateProfilePrompts = async (profileId, prompts) => {
     DO UPDATE SET 
       answer = EXCLUDED.answer,
       updated_at = NOW()
-      RETURNING profile_id, question_key, answer;
+    RETURNING profile_id, question_key, answer;
   `;
 
   const results = [];
 
-  for (const [question_key, answer] of Object.entries(promptEntries)) {
-    const { rows } = await pool.query(query, [
-      profileId,
-      question_key,
-      answer,
-    ]);
+  for (const [question_key, answer] of Object.entries(prompts)) {
+    const { rows } = await pool.query(query, [profileId, question_key, answer]);
     results.push(rows[0]);
   }
 
   return results;
 };
 
-//
+
 
 
 /* Example of prompts object:
