@@ -526,6 +526,7 @@ export const getProfile = async (req, res) => {
 
     const profileQuery = `
       SELECT 
+        id,
         first_name,
         last_name,
         phone,
@@ -591,6 +592,24 @@ export const getProfile = async (req, res) => {
     const user = userResult.rows[0];
     const profile = profileResult.rows.length ? profileResult.rows[0] : {};
 
+
+    // pull profile prompts (questions and answers)
+    let prompts = {};
+
+    if (profile && profile.id) {
+      const promptsQuery = `
+        SELECT question_key, answer
+        FROM profile_prompts
+        WHERE profile_id = $1
+      `;
+    
+    const promptsResult = await pool.query(promptsQuery, [profile.id]);
+
+    for (const row of promptsResult.rows) {
+      prompts[row.question_key] = row.answer;
+    }
+    }
+
     const combinedData = {
       user_id: user.id,
       email: user.email,
@@ -655,6 +674,7 @@ export const getProfile = async (req, res) => {
     res.status(200).json({
       message: "Profile fetched successfully",
       data: combinedData,
+      prompts: prompts,
     });
   } catch (error) {
     console.error("Error fetching profile:", error);
