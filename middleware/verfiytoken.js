@@ -97,7 +97,7 @@ export const validateRefreshToken = (req, res) => {
     const accessToken = jwt.sign(
       payload,
       process.env.ACCESS_SECRET_KEY,
-      { expiresIn: "15m" }
+      { expiresIn: "30m" }
     );
 
     // ✅ 5️⃣ Single response

@@ -7,14 +7,14 @@ const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
 
 
-router.get("/api/chats/recent/:myUserId", getRecentChats); // Get Recent Chats           /(2)
-router.post("/api/chat/upload", upload.single("file"), uploadFile);  // Upload File
+router.get("/api/chats/recent/:myUserId", getRecentChats);         
+router.post("/api/chat/upload" ,upload.single("file"), uploadFile);   //
 router.get("/api/users", getAllUsers); // Get All Users
-router.get("/api/messages/:userId", getMessagesForUser); // Get Messages for User  ////  /(1)
-router.post("/api/messages", getAllMessages); // Get All Messages
-router.post("/api/reactions", addReaction);  // Add Reaction
-router.get("/api/reactions", getAllReactions); // Get All Reactions         /(3)
-router.delete("/api/messages/:id", deleteMessage); // Delete Message by ID
+router.get("/api/messages/:userId", getMessagesForUser); 
+router.post("/api/messages", getAllMessages); // 
+router.post("/api/reactions",addReaction);    //
+router.get("/api/reactions", getAllReactions);        
+router.delete("/api/messages/:id", deleteMessage); 
 
 // ---------------- Get Chat Messages ----------------
 
