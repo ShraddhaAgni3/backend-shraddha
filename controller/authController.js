@@ -250,7 +250,7 @@ export async function loginUser(req, res) {
     const refresh_secret_key = process.env.REFRESH_SECRET_KEY;
 
     const accessToken = jwt.sign(payload, access_secret_key, {
-      expiresIn: "15m",
+      expiresIn: "30m",
     });
     const refreshToken = jwt.sign(payload, refresh_secret_key, {
       expiresIn: "7d",

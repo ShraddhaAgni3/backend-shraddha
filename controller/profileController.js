@@ -302,7 +302,7 @@ if (height_ft !== undefined || height_in !== undefined) {
         relationship_values = $46,
         values_in_others = $47,
         relationship_pace = $48,
-        height = COALESCE($49, height),
+        height = $49,
         life_rhythms = $50,
         about_me = $51,
         ways_i_spend_time = $52,
@@ -369,7 +369,7 @@ if (height_ft !== undefined || height_in !== undefined) {
       imageUrl,
       id,
     ];
-
+    // console.log("height,",height);
     const profileResult = await pool.query(updateProfileQuery, profileValues);
 
     if (!profileResult.rows.length) {
@@ -684,7 +684,7 @@ export const getProfile = async (req, res) => {
       is_submitted: profile.is_submitted || false,
       updated_at: profile.updated_at || null,
     };
-
+    console.log("my profile data:",combinedData);
     res.status(200).json({
       message: "Profile fetched successfully",
       data: combinedData,
