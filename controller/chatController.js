@@ -1,12 +1,12 @@
 import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
 import { createClient } from "@supabase/supabase-js";
-import { io,onlineUsers,sendNotification } from "../server.js"; 
+import { io, onlineUsers, sendNotification } from "../server.js";
 import { pool } from "../config/db.js";
 import { searchUsers } from "../config/db.js";
 import cloudinary from "../config/cloudinaryConfig.js";
 import { createNotification } from "./notificationController.js";
-import {  getRecentChats as dbGetRecentChats } from "../config/db.js";
+import { getRecentChats as dbGetRecentChats } from "../config/db.js";
 dotenv.config();
 
 // ✅ Initialize Supabase
@@ -15,7 +15,7 @@ dotenv.config();
 export const healthCheck = (req, res) => {
   return res.json({ status: "Server running ✅" });
 };
-  export const uploadFile = async (req, res) => {
+export const uploadFile = async (req, res) => {
   try {
     // ✅ Multer will give us req.file (buffer included)
     if (!req.file) {
@@ -41,12 +41,11 @@ export const healthCheck = (req, res) => {
           message: "File uploaded successfully ✅",
           url: uploadResult.secure_url,
         });
-      }
+      },
     );
 
     // ✅ Send buffer to Cloudinary
     stream.end(req.file.buffer);
-
   } catch (err) {
     console.error("Upload Error:", err);
     return res.status(500).json({ error: "Upload failed" });
@@ -65,13 +64,11 @@ export const getAllUsers = async (req, res) => {
     const users = await searchUsers(searchTerm);
 
     return res.status(200).json(users);
-
   } catch (err) {
     console.error("❌ Error searching users:", err);
     res.status(500).json({ error: "Server error while searching users" });
   }
 };
-
 
 export const getMessagesForUser = async (req, res) => {
   try {
@@ -89,7 +86,7 @@ export const getMessagesForUser = async (req, res) => {
        WHERE (sender_id = $1 AND receiver_id = $2)
           OR (sender_id = $2 AND receiver_id = $1)
        ORDER BY created_at ASC`,
-      [myUserId, userId]
+      [myUserId, userId],
     );
 
     // ✅ 3️⃣ Mark all unread messages as read (for logged-in user)
@@ -99,20 +96,18 @@ export const getMessagesForUser = async (req, res) => {
        WHERE receiver_id = $1 
          AND sender_id = $2 
          AND is_read = FALSE`,
-      [myUserId, userId]
+      [myUserId, userId],
     );
 
     // ✅ 4️⃣ Return messages (frontend can now display updated messages)
     return res.status(200).json(rows);
-
   } catch (error) {
     console.error("Error fetching messages:", error.message);
     return res.status(500).json({ error: "Failed to fetch messages" });
   }
-}; 
+};
 
- 
-    // 🟢 Send a new message + create notification
+// 🟢 Send a new message + create notification
 export const getAllMessages = async (req, res) => {
   try {
     const { sender_id, receiver_id, content, attachment_url } = req.body;
@@ -130,51 +125,71 @@ export const getAllMessages = async (req, res) => {
       `INSERT INTO messages (sender_id, receiver_id, content, attachment_url, is_read)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [sender_id, receiver_id, content, attachment_url, false]
+      [sender_id, receiver_id, content, attachment_url, false],
     );
 
     const savedMessage = rows[0];
 
     const queryToGetSenderName = `SELECT first_name,last_name FROM profiles WHERE user_id = $1`;
-    const senderNameResult = await pool.query(queryToGetSenderName, [sender_id]);
+    const senderNameResult = await pool.query(queryToGetSenderName, [
+      sender_id,
+    ]);
 
-    const senderFullName = `${senderNameResult.rows[0].first_name} ${senderNameResult.rows[0].last_name}`;  
+    const senderFullName = `${senderNameResult.rows[0].first_name} ${senderNameResult.rows[0].last_name}`;
 
     // ✅ 3️⃣ Emit new message to all connected sockets (real-time chat)
-    io.emit("new_message", savedMessage);
-
-    // ✅ 4️⃣ If receiver is online, send real-time message notification
+    //io.emit("new_message", savedMessage);
+    // ✅ Send message ONLY to sender & receiver
+    //
+    const senderSocketId = onlineUsers.get(sender_id);
     const receiverSocketId = onlineUsers.get(receiver_id);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("new_notification", {
-        from: sender_id,
-        message: content || "📎 Attachment",
-        timestamp: savedMessage.created_at,
-      });
+
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("new_message", savedMessage);
     }
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("new_message", savedMessage);
+    }
+    //
+    // ✅ 4️⃣ If receiver is online, send real-time message notification
+    // const receiverSocketId = onlineUsers.get(receiver_id);
+    // if (receiverSocketId) {
+    //   io.to(receiverSocketId).emit("new_notification", {
+    //     from: sender_id,
+    //     message: content || "📎 Attachment",
+    //     timestamp: savedMessage.created_at,
+    //   });
+    // }
 
     // ✅ 5️⃣ Insert persistent notification in DB (for bell icon)
-    await pool.query(
-      `INSERT INTO notifications (user_id, title, message, type, is_read, created_at)
-       VALUES ($1, $2, $3, $4, FALSE, NOW())`,
-      [
-        receiver_id,
-        "New Message 💬",
-        `${senderFullName} sent you a new message.`,
-        "Message", // type of notification
-      ]
+    // await pool.query(
+    //   `INSERT INTO notifications (user_id, title, message, type, is_read, created_at)
+    //    VALUES ($1, $2, $3, $4, FALSE, NOW())`,
+    //   [
+    //     receiver_id,
+    //     "New Message 💬",
+    //     `${senderFullName} sent you a new message.`,
+    //     "Message", // type of notification
+    //   ],
+    // );
+
+    // ✅ SINGLE notification call (DB + socket)
+    //
+    await sendNotification(
+      receiver_id,
+      "New Message 💬",
+      `${senderFullName} sent you a new message`,
+      "message",
     );
+    //
 
     // ✅ 6️⃣ Return saved message
     return res.status(201).json(savedMessage);
-
   } catch (error) {
     console.error("Error saving message:", error.message);
     return res.status(500).json({ error: "Failed to save message" });
   }
 };
- 
-
 
 // ---------------- Add Reaction ----------------
 export const addReaction = async (req, res) => {
@@ -194,7 +209,7 @@ export const addReaction = async (req, res) => {
        ON CONFLICT (message_id, user_id)
        DO UPDATE SET emoji = EXCLUDED.emoji
        RETURNING *`,
-      [message_id, user_id, emoji]
+      [message_id, user_id, emoji],
     );
 
     const reaction = rows[0];
@@ -202,7 +217,7 @@ export const addReaction = async (req, res) => {
     // 2️⃣ Get sender and receiver info from message
     const msgQuery = await pool.query(
       `SELECT sender_id, receiver_id FROM messages WHERE id = $1`,
-      [message_id]
+      [message_id],
     );
 
     if (msgQuery.rows.length === 0)
@@ -211,36 +226,49 @@ export const addReaction = async (req, res) => {
     const message = msgQuery.rows[0];
     const receiverId =
       message.sender_id === user_id ? message.receiver_id : message.sender_id;
-   ////
-        const userResult = await pool.query(
+    ////
+    const userResult = await pool.query(
       `SELECT first_name, last_name FROM profiles WHERE user_id = $1`,
-      [user_id]
+      [user_id],
     );
 
     const senderFullName = userResult.rows.length
       ? `${userResult.rows[0].first_name} ${userResult.rows[0].last_name}`
       : `User ${user_id}`;
-   /////
-      /////
-       const notificationMessage =
-      `${senderFullName} reacted with "${emoji}" on your message.`;
+    /////
+    /////
+    const notificationMessage = `${senderFullName} reacted with "${emoji}" on your message.`;
 
     // 3️⃣ Create notification (DB + bell icon)
-    await createNotification(
-      receiverId,
-      "New Reaction 💬",
-      notificationMessage,
-      "reaction"
-    );
+    // await createNotification(
+    //   receiverId,
+    //   "New Reaction 💬",
+    //   notificationMessage,
+    //   "reaction",
+    // );
+
 
     // 4️⃣ Send real-time notification if receiver online
-    const socketId = onlineUsers.get(receiverId);
-    if (socketId) {
-      io.to(socketId).emit("new_notification", {
-        title: "New Reaction 💬",
-        message: notificationMessage,
-        reaction,
-      });
+    // const socketId = onlineUsers.get(receiverId);
+    // if (socketId) {
+    //   io.to(socketId).emit("new_notification", {
+    //     title: "New Reaction 💬",
+    //     message: notificationMessage,
+    //     reaction,
+    //   });
+        
+    // ✅ CENTRALIZED NOTIFICATION
+       await sendNotification(
+       receiverId,
+      "New Reaction 💬",
+      notificationMessage,
+       "reaction"
+      );
+
+// ✅ reaction real-time update (UI needs it)
+const socketId = onlineUsers.get(receiverId);
+if (socketId) {
+ 
 
       // optional: also send reaction update
       io.to(socketId).emit("new_reaction", reaction);
@@ -258,7 +286,7 @@ export const addReaction = async (req, res) => {
 export const getAllReactions = async (req, res) => {
   try {
     const { rows } = await pool.query(
-      "SELECT * FROM reactions ORDER BY timestamp DESC"
+      "SELECT * FROM reactions ORDER BY timestamp DESC",
     );
     return res.json(rows);
   } catch (error) {
@@ -266,7 +294,6 @@ export const getAllReactions = async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch reactions" });
   }
 };
-
 
 // ---------------- Get Recent Chats ----------------
 export const getRecentChats = async (req, res) => {
@@ -297,10 +324,9 @@ export const deleteMessage = async (req, res) => {
     }
 
     // Check if message exists
-    const msg = await pool.query(
-      "SELECT * FROM messages WHERE id = $1",
-      [messageId]
-    );
+    const msg = await pool.query("SELECT * FROM messages WHERE id = $1", [
+      messageId,
+    ]);
 
     if (msg.rows.length === 0) {
       return res.status(404).json({ error: "Message not found" });
@@ -308,13 +334,15 @@ export const deleteMessage = async (req, res) => {
 
     // Only sender can delete
     if (String(msg.rows[0].sender_id) !== String(userId)) {
-      return res.status(403).json({ error: "Not allowed to delete this message" });
+      return res
+        .status(403)
+        .json({ error: "Not allowed to delete this message" });
     }
 
     // Delete the message
     const deleted = await pool.query(
       "DELETE FROM messages WHERE id = $1 RETURNING *",
-      [messageId]
+      [messageId],
     );
 
     // Emit real-time delete event
@@ -324,21 +352,8 @@ export const deleteMessage = async (req, res) => {
       success: true,
       deleted: deleted.rows[0],
     });
-
   } catch (err) {
     console.error("Delete message error:", err);
     return res.status(500).json({ error: "Failed to delete message" });
   }
 };
-
-
-
-
-
-
-
-
-
-
-
-
