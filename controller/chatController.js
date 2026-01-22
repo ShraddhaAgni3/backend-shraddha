@@ -146,7 +146,7 @@ export const getAllMessages = async (req, res) => {
     // ✅ 4️⃣ If receiver is online, send real-time message notification
     const receiverSocketId = onlineUsers.get(receiver_id);
     if (receiverSocketId) {
-      io.to(receiverSocketId).emit("message_notification", {
+      io.to(receiverSocketId).emit("new_notification", {
         from: sender_id,
         message: content || "📎 Attachment",
         timestamp: savedMessage.created_at,
