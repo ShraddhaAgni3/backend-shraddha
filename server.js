@@ -101,18 +101,18 @@ io.on("connection", (socket) => {
 });
 
 //  Function to send notification
-export const sendNotification = async (userId, title, message, type="message") => {
+export const sendNotification = async (userId, title, message,) => {
   try {
     // Save in notifications table
     await pool.query(
-      `INSERT INTO notifications (user_id, title, message, type,is_read) VALUES ($1, $2, $3, $4, FALSE)`,
-      [userId, title, message, type]
+      `INSERT INTO notifications (user_id, title, message) VALUES ($1, $2, $3)`,
+      [userId, title, message]
     );
 
     // Send via Socket.IO if user is online
     const socketId = onlineUsers.get(userId);
     if (socketId) {
-      io.to(socketId).emit("new_notification", { title, message, type,created_at: new Date() });
+      io.to(socketId).emit("new_notification", { title, message });
     }
 
     console.log(` Notification sent to user ${userId}: ${title}`);

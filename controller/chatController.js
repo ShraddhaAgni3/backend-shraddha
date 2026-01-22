@@ -138,51 +138,31 @@ export const getAllMessages = async (req, res) => {
     const senderFullName = `${senderNameResult.rows[0].first_name} ${senderNameResult.rows[0].last_name}`;
 
     // ✅ 3️⃣ Emit new message to all connected sockets (real-time chat)
-    //io.emit("new_message", savedMessage);
+    io.emit("new_message", savedMessage);
     // ✅ Send message ONLY to sender & receiver
-    //
-    const senderSocketId = onlineUsers.get(sender_id);
+    
+     // ✅ 4️⃣ If receiver is online, send real-time message notification
     const receiverSocketId = onlineUsers.get(receiver_id);
-
-    if (senderSocketId) {
-      io.to(senderSocketId).emit("new_message", savedMessage);
-    }
     if (receiverSocketId) {
-      io.to(receiverSocketId).emit("new_message", savedMessage);
+      io.to(receiverSocketId).emit("new_notification", {
+        from: sender_id,
+        message: content || "📎 Attachment",
+        timestamp: savedMessage.created_at,
+      });
     }
-    //
-    // ✅ 4️⃣ If receiver is online, send real-time message notification
-    // const receiverSocketId = onlineUsers.get(receiver_id);
-    // if (receiverSocketId) {
-    //   io.to(receiverSocketId).emit("new_notification", {
-    //     from: sender_id,
-    //     message: content || "📎 Attachment",
-    //     timestamp: savedMessage.created_at,
-    //   });
-    // }
 
     // ✅ 5️⃣ Insert persistent notification in DB (for bell icon)
-    // await pool.query(
-    //   `INSERT INTO notifications (user_id, title, message, type, is_read, created_at)
-    //    VALUES ($1, $2, $3, $4, FALSE, NOW())`,
-    //   [
-    //     receiver_id,
-    //     "New Message 💬",
-    //     `${senderFullName} sent you a new message.`,
-    //     "Message", // type of notification
-    //   ],
-    // );
-
-    // ✅ SINGLE notification call (DB + socket)
-    //
-    await sendNotification(
-      receiver_id,
-      "New Message 💬",
-      `${senderFullName} sent you a new message`,
-      "message",
+    await pool.query(
+      `INSERT INTO notifications (user_id, title, message, type, is_read, created_at)
+       VALUES ($1, $2, $3, $4, FALSE, NOW())`,
+      [
+        receiver_id,
+        "New Message 💬",
+        `${senderFullName} sent you a new message.`,
+        "Message", // type of notification
+      ],
     );
-    //
-
+       // console.log(`💬 Message from ${senderFullName} to user ${receiver_id}: ${content || 'Attachment'}`);
     // ✅ 6️⃣ Return saved message
     return res.status(201).json(savedMessage);
   } catch (error) {
@@ -239,37 +219,24 @@ export const addReaction = async (req, res) => {
     /////
     const notificationMessage = `${senderFullName} reacted with "${emoji}" on your message.`;
 
-    // 3️⃣ Create notification (DB + bell icon)
-    // await createNotification(
-    //   receiverId,
-    //   "New Reaction 💬",
-    //   notificationMessage,
-    //   "reaction",
-    // );
+   // 3️⃣ Create notification (DB + bell icon)
+    await createNotification(
+      receiverId,
+      "New Reaction 💬",
+      notificationMessage,
+      "reaction",
+    );
 
 
     // 4️⃣ Send real-time notification if receiver online
-    // const socketId = onlineUsers.get(receiverId);
-    // if (socketId) {
-    //   io.to(socketId).emit("new_notification", {
-    //     title: "New Reaction 💬",
-    //     message: notificationMessage,
-    //     reaction,
-    //   });
+    const socketId = onlineUsers.get(receiverId);
+    if (socketId) {
+      io.to(socketId).emit("new_notification", {
+        title: "New Reaction 💬",
+        message: notificationMessage,
+        reaction,
+      });
         
-    // ✅ CENTRALIZED NOTIFICATION
-       await sendNotification(
-       receiverId,
-      "New Reaction 💬",
-      notificationMessage,
-       "reaction"
-      );
-
-// ✅ reaction real-time update (UI needs it)
-const socketId = onlineUsers.get(receiverId);
-if (socketId) {
- 
-
       // optional: also send reaction update
       io.to(socketId).emit("new_reaction", reaction);
     }
