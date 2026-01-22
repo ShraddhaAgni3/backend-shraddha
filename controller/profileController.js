@@ -522,7 +522,7 @@ export const updateProfile = async (req, res) => {
 // 🟢 Get Profile
 export const getProfile = async (req, res) => {
   try {
-    const { userId } = req.user;
+    const  userId  = req.user.id;
 
     const userQuery = `
       SELECT id, email
