@@ -46,7 +46,7 @@ import { pool } from "../config/db.js";
 
 //     const updateProfileQuery = `
 //       UPDATE profiles
-//       SET 
+//       SET
 //         first_name = $1,
 //         last_name = $2,
 //         phone = $3,
@@ -68,13 +68,13 @@ import { pool } from "../config/db.js";
 //         company = $19,
 //         company_type = $20,       -- ✅ added
 //         experience = $21,
-//         position = $22,     
+//         position = $22,
 //         hobbies = $23,                -- ✅ added
 //         image_url = COALESCE($24, image_url),
 //         updated_at = NOW(),
 //         is_submitted = true
 //       WHERE user_id = $25
-      
+
 //       RETURNING *;
 //     `;
 
@@ -119,7 +119,7 @@ import { pool } from "../config/db.js";
 //         prompts
 //       );
 //     }
-// //      
+// //
 
 //     const updateUserQuery = `
 //       UPDATE users
@@ -150,10 +150,6 @@ import { pool } from "../config/db.js";
 //     res.status(500).json({ message: "Server error", error: error.message });
 //   }
 // };
-
-
-
-
 
 export const updateProfile = async (req, res) => {
   try {
@@ -221,35 +217,29 @@ export const updateProfile = async (req, res) => {
       });
     }
 
-    const { id } = req.user;
+    const { userId } = req.user;
     const imageUrl = req.file ? req.file.path : null;
 
-     // HEIGHT LOGIC (ONLY ONE COLUMN)
+    // HEIGHT LOGIC (ONLY ONE COLUMN)
     // =========================
-      let height = null;
+    let height;
 
-if (height_ft !== undefined || height_in !== undefined) {
-  if (height_ft === undefined || height_in === undefined) {
-    return res.status(400).json({
-      message: "Both height_ft and height_in are required",
-    });
-  }
+    if (height_ft !== undefined || height_in !== undefined) {
+      if (height_ft === undefined || height_in === undefined) {
+        return res.status(400).json({
+          message: "Both height_ft and height_in are required",
+        });
+      }
 
-  const ft = Number(height_ft);
-  const inch = Number(height_in);
+      const ft = Number(height_ft);
+      const inch = Number(height_in);
 
-  if (
-    Number.isNaN(ft) ||
-    Number.isNaN(inch) ||
-    inch < 0 ||
-    inch > 11
-  ) {
-    return res.status(400).json({ message: "Invalid height" });
-  }
+      if (Number.isNaN(ft) || Number.isNaN(inch) || inch < 0 || inch > 11) {
+        return res.status(400).json({ message: "Invalid height" });
+      }
 
-  height = (ft * 12) + inch;
-}
-
+      height = ft * 12 + inch;
+    }
 
     const updateProfileQuery = `
       UPDATE profiles
@@ -356,7 +346,7 @@ if (height_ft !== undefined || height_in !== undefined) {
       work_rhythm,
       career_decision_style,
       work_demand_response,
-      love_language_affection, // enum[] — pass as array
+      love_language_affection, // enum — pass as enum string
       preference_of_closeness,
       approach_to_physical_closeness,
       relationship_values,
@@ -367,7 +357,7 @@ if (height_ft !== undefined || height_in !== undefined) {
       about_me,
       JSON.stringify(ways_i_spend_time || {}),
       imageUrl,
-      id,
+      userId,
     ];
     // console.log("height,",height);
     const profileResult = await pool.query(updateProfileQuery, profileValues);
@@ -384,9 +374,16 @@ if (height_ft !== undefined || height_in !== undefined) {
     //   );
     // }
 
-      let savedPrompts = [];
-    if (prompts && typeof prompts === "object" && Object.keys(prompts).length > 0) {
-      savedPrompts = await saveOrUpdateProfilePrompts(profileResult.rows[0].id, prompts);
+    let savedPrompts = [];
+    if (
+      prompts &&
+      typeof prompts === "object" &&
+      Object.keys(prompts).length > 0
+    ) {
+      savedPrompts = await saveOrUpdateProfilePrompts(
+        profileResult.rows[0].id,
+        prompts,
+      );
     }
 
     const updateUserQuery = `
@@ -395,37 +392,38 @@ if (height_ft !== undefined || height_in !== undefined) {
       WHERE id = $2
       RETURNING id, email;
     `;
-    const userResult = await pool.query(updateUserQuery, [email, id]);
+    const userResult = await pool.query(updateUserQuery, [email, userId]);
 
     if (!userResult.rows.length) {
       return res.status(404).json({ message: "User not found" });
     }
 
     // Optionally remove sensitive or unwanted fields from response
-    const { dob: removedDob, age: removedAge, ...safeProfile } =
-      profileResult.rows[0];
+    const {
+      dob: removedDob,
+      age: removedAge,
+      ...safeProfile
+    } = profileResult.rows[0];
 
-       const profileWithPrompts = {
+    const profileWithPrompts = {
       ...safeProfile,
       prompts: savedPrompts.reduce((acc, cur) => {
         acc[cur.question_key] = cur.answer;
         return acc;
-      }, {})
+      }, {}),
     };
 
     return res.status(200).json({
       message: "Profile and email updated successfully",
       user: userResult.rows[0],
       profile: profileWithPrompts,
-     // prompts: savedPrompts, // Uncomment if you want to return saved prompts
+      // prompts: savedPrompts, // Uncomment if you want to return saved prompts
     });
   } catch (error) {
     console.error("Error updating profile and email:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
-
 
 // // 🟢 Get Profile
 // export const getProfile = async (req, res) => {
@@ -444,7 +442,7 @@ if (height_ft !== undefined || height_in !== undefined) {
 //     }
 
 //     const profileQuery = `
-//       SELECT 
+//       SELECT
 //         first_name,
 //         last_name,
 //         phone,
@@ -520,18 +518,18 @@ if (height_ft !== undefined || height_in !== undefined) {
 //     res.status(500).json({ message: "Server error", error: error.message });
 //   }
 // };
-    
+
 // 🟢 Get Profile
 export const getProfile = async (req, res) => {
   try {
-    const { id } = req.user;
+    const { userId } = req.user;
 
     const userQuery = `
       SELECT id, email
       FROM users
       WHERE id = $1
     `;
-    const userResult = await pool.query(userQuery, [id]);
+    const userResult = await pool.query(userQuery, [userId]);
 
     if (!userResult.rows.length) {
       return res.status(404).json({ message: "User not found" });
@@ -600,11 +598,10 @@ export const getProfile = async (req, res) => {
       WHERE user_id = $1
     `;
 
-    const profileResult = await pool.query(profileQuery, [id]);
+    const profileResult = await pool.query(profileQuery, [userId]);
 
     const user = userResult.rows[0];
     const profile = profileResult.rows.length ? profileResult.rows[0] : {};
-
 
     // pull profile prompts (questions and answers)
     let prompts = {};
@@ -615,12 +612,12 @@ export const getProfile = async (req, res) => {
         FROM profile_prompts
         WHERE profile_id = $1
       `;
-    
-    const promptsResult = await pool.query(promptsQuery, [profile.id]);
 
-    for (const row of promptsResult.rows) {
-      prompts[row.question_key] = row.answer;
-    }
+      const promptsResult = await pool.query(promptsQuery, [profile.id]);
+
+      for (const row of promptsResult.rows) {
+        prompts[row.question_key] = row.answer;
+      }
     }
 
     const combinedData = {
@@ -671,7 +668,8 @@ export const getProfile = async (req, res) => {
       work_demand_response: profile.work_demand_response || null,
       love_language_affection: profile.love_language_affection || null,
       preference_of_closeness: profile.preference_of_closeness || null,
-      approach_to_physical_closeness: profile.approach_to_physical_closeness || null,
+      approach_to_physical_closeness:
+        profile.approach_to_physical_closeness || null,
       relationship_values: profile.relationship_values || null,
       values_in_others: profile.values_in_others || null,
       relationship_pace: profile.relationship_pace || null,
@@ -684,7 +682,7 @@ export const getProfile = async (req, res) => {
       is_submitted: profile.is_submitted || false,
       updated_at: profile.updated_at || null,
     };
-    console.log("my profile data:",combinedData);
+    console.log("my profile data:", combinedData);
     res.status(200).json({
       message: "Profile fetched successfully",
       data: combinedData,
@@ -695,8 +693,6 @@ export const getProfile = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
-
 
 // 🟢 Save or Update Profile Prompts (Questions and Answers)
 //
@@ -715,7 +711,7 @@ export const getProfile = async (req, res) => {
 //     INSERT INTO profile_prompts (profile_id, question_key, answer)
 //     VALUES ($1, $2, $3)
 //     ON CONFLICT (profile_id, question_key)
-//     DO UPDATE SET 
+//     DO UPDATE SET
 //       answer = EXCLUDED.answer,
 //       updated_at = NOW()
 //       RETURNING profile_id, question_key, answer;
@@ -755,9 +751,6 @@ const saveOrUpdateProfilePrompts = async (profileId, prompts) => {
 
   return results;
 };
-
-
-
 
 /* Example of prompts object:
 
