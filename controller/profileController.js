@@ -217,7 +217,7 @@ export const updateProfile = async (req, res) => {
       });
     }
 
-    const { userId } = req.user;
+    const  userId  = req.user.id
     const imageUrl = req.file ? req.file.path : null;
 
     // HEIGHT LOGIC (ONLY ONE COLUMN)
