@@ -9,7 +9,7 @@ export const getNotifications = async (req, res) => {
       "SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC",
       [user_id]
     );
-
+    console.log("✅ Notifications fetched successfully.");
     res.status(200).json(result.rows);
   } catch (error) {
     console.error("Error fetching notifications:", error);
@@ -181,6 +181,7 @@ export const getUnreadNotifications = async (req, res) => {
     `;
 
     const result = await pool.query(query, [userId]);
+    console.log("✅ Unread notifications fetched successfully.", result.rows);
     res.json(result.rows);
   } catch (err) {
     console.error("❌ Error fetching notifications:", err);
