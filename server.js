@@ -41,6 +41,7 @@ import configRoutes from "./routes/configRoutes.js";
 import planRoutes from "./routes/planRoutes.js";
 // Load environment variables
 import reportRoutes from "./routes/reportRoutes.js";
+import adminReportRoutes from "./routes/adminreportRoutes.js";
 import { create } from "domain";
 dotenv.config();
 
@@ -162,6 +163,8 @@ app.use("/api", planRoutes);
 
 // Admin Reports Route
 app.use("/api/admin/reports", reportRoutes);
+
+app.use("/api/admin/users/handle",adminReportRoutes);
 
 
 
