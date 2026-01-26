@@ -42,7 +42,9 @@ import planRoutes from "./routes/planRoutes.js";
 // Load environment variables
 import reportRoutes from "./routes/reportRoutes.js";
 import adminReportRoutes from "./routes/adminreportRoutes.js";
-import { create } from "domain";
+//import { create } from "domain";
+
+import linkedinRoutes from './routes/linkedinAuthRoutes.js';
 dotenv.config();
 
 const app = express();
@@ -63,6 +65,11 @@ app.use(cookieParser());
 
 // Serve static files from "uploads" directory
 //app.use("/uploads", express.static("uploads"));
+
+app.use(cors({
+    origin: ['http://localhost:5173', 'https://intentionalconnections.app', 'https://frontend1-7fsg.onrender.com/'],
+    credentials: true
+}));
 
 
 
@@ -165,7 +172,8 @@ app.use("/api", planRoutes);
 app.use("/api/admin/reports", reportRoutes);
 
 app.use("/api/admin/users/handle",adminReportRoutes);
-
+// LinkedIn Auth Routes
+app.use('/api/linkedin', linkedinRoutes);
 
 
 //app.use(express.urlencoded({ extended: true })); 
