@@ -1,7 +1,9 @@
 import express from "express";
 import { searchProfiles } from "../controller/searchController.js";
-const router = express.Router();    
+import { validateAccessToken } from "../middleware/verfiytoken.js";
+const router = express.Router();
 
-router.get("/search", searchProfiles); // Search Profiles by Query Parameter
+// ✅ EXACTLY LIKE CHAT ROUTES
+router.get("/search", validateAccessToken,searchProfiles);
 
 export default router;
