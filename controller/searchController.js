@@ -272,7 +272,6 @@
 
 
 
-
 import { pool } from "../config/db.js";
 
 export const searchProfiles = async (req, res) => {
@@ -312,12 +311,17 @@ export const searchProfiles = async (req, res) => {
         });
       }
 
-      if (planRows[0].people_search_used >= planRows[0].people_search_limit) {
-        return res.status(403).json({
-          code: "SEARCH_LIMIT_EXCEEDED",
-          message: "Your people search limit is over",
-        });
-      }
+      // 🚫 Block ONLY if NOT unlimited AND limit reached
+if (
+  planRows[0].people_search_limit !== -1 &&
+  planRows[0].people_search_used >= planRows[0].people_search_limit
+) {
+  return res.status(403).json({
+    code: "SEARCH_LIMIT_EXCEEDED",
+    message: "Your people search limit is over",
+  });
+}
+
     }
     /* ==========================================================
        ⭐ SHRADDHA NEW CODE END
