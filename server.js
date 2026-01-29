@@ -44,7 +44,7 @@ import reportRoutes from "./routes/reportRoutes.js";
 import adminReportRoutes from "./routes/adminreportRoutes.js";
 //import { create } from "domain";
 
-import linkedinRoutes from './routes/linkedinAuthRoutes.js';
+import linkedinRoutes from './routes/linkedinRoutes.js';
 dotenv.config();
 
 const app = express();
