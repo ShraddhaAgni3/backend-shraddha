@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import { sendNotification } from "../server.js";
+import { sendEmail } from "../services/sendEmail.js";
 //import { sendEmail } from "../emailService.js";
 
 dotenv.config();
