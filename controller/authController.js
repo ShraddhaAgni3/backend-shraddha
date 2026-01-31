@@ -289,7 +289,9 @@ export const forgotPassword = async (req, res) => {
     const token = jwt.sign({ email }, process.env.JWT_SECRET, {
       expiresIn: "15m",
     });
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+   // const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+   const resetLink = `${process.env.FRONTEND_URL}/#/reset-password/${token}`;
+
 
     await sendEmail({
       to: email,
