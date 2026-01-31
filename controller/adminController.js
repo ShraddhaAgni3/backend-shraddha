@@ -280,7 +280,84 @@ export const getAllUsers = async (req, res) => {
 
 
 
-// ✅ Get Specific User Details by ID
+// // ✅ Get Specific User Details by ID
+// export const getAllUserDetails = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     if (!id) {
+//       return res.status(400).json({
+//         status: "error",
+//         message: "User ID is required",
+//       });
+//     }
+
+//     const query = `
+//       SELECT 
+//         u.id AS user_id,
+//         u.email,
+//         u.password,
+//         u.status AS current_status,
+//         u.created_at AS registration_date,
+//         p.first_name,
+//         p.last_name,
+//         p.phone,
+//         p.gender,
+//         p.marital_status,
+//         p.address,
+//         p.profession,
+//         p.skills,
+//         p.interests,
+//         p.hobbies,
+//         p.about,
+//         p.city,
+//         p.country,
+//         p.pincode,
+//         p.headline,
+//         p.dob,
+//         p.age,
+//         p.education,
+//         p.company_type,
+//         p.position,
+//         p.state,
+//         p.company,
+//         p.experience,
+//         p.is_submitted,
+//         p.updated_at
+//       FROM users u
+//       LEFT JOIN profiles p
+//       ON u.id = p.user_id
+//       WHERE u.id = $1
+//       ORDER BY u.created_at DESC;
+//     `;
+
+//     const { rows } = await pool.query(query, [id]);
+
+//     if (rows.length === 0) {
+//       return res.status(404).json({
+//         status: "error",
+//         message: "User not found",
+//       });
+//     }
+
+//     return res.status(200).json({
+//       status: "success",
+//       message: "Detailed user profile fetched successfully",
+//       user: rows[0],
+//     });
+
+//   } catch (error) {
+//     console.error("Error fetching user details:", error);
+//     return res.status(500).json({
+//       status: "error",
+//       message: "Failed to fetch detailed profiles",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
+
 export const getAllUserDetails = async (req, res) => {
   try {
     const { id } = req.params;
@@ -296,9 +373,11 @@ export const getAllUserDetails = async (req, res) => {
       SELECT 
         u.id AS user_id,
         u.email,
-        u.password,
         u.status AS current_status,
         u.created_at AS registration_date,
+
+        -- Profile fields
+        p.id AS profile_id,
         p.first_name,
         p.last_name,
         p.phone,
@@ -311,29 +390,69 @@ export const getAllUserDetails = async (req, res) => {
         p.hobbies,
         p.about,
         p.city,
+        p.state,
         p.country,
         p.pincode,
         p.headline,
         p.dob,
         p.age,
         p.education,
-        p.company_type,
-        p.position,
-        p.state,
         p.company,
+        p.company_type,
         p.experience,
+        p.position,
+        p.professional_identity,
+        p.interested_in,
+        p.relationship_goal,
+        p.children_preference,
+        p.education_institution_name,
+        p.languages_spoken,
+        p.zodiac_sign,
+        p.self_expression,
+        p.freetime_style,
+        p.health_activity_level,
+        p.pets_preference,
+        p.religious_belief,
+        p.smoking,
+        p.drinking,
+        p.work_environment,
+        p.interaction_style,
+        p.work_rhythm,
+        p.career_decision_style,
+        p.work_demand_response,
+        p.love_language_affection,
+        p.preference_of_closeness,
+        p.approach_to_physical_closeness,
+        p.relationship_values,
+        p.values_in_others,
+        p.relationship_pace,
+        p.height,
+        p.life_rhythms,
+        p.ways_i_spend_time,
+        p.about_me,
+        p.username,
+        p.image_url,
         p.is_submitted,
-        p.updated_at
+        p.updated_at,
+
+        -- Prompts (JSON)
+        COALESCE(
+          jsonb_object_agg(pp.question_key, pp.answer)
+          FILTER (WHERE pp.question_key IS NOT NULL),
+          '{}'
+        ) AS prompts
+
       FROM users u
-      LEFT JOIN profiles p
-      ON u.id = p.user_id
+      LEFT JOIN profiles p ON u.id = p.user_id
+      LEFT JOIN profile_prompts pp ON p.id = pp.profile_id
       WHERE u.id = $1
+      GROUP BY u.id, p.id
       ORDER BY u.created_at DESC;
     `;
 
     const { rows } = await pool.query(query, [id]);
 
-    if (rows.length === 0) {
+    if (!rows.length) {
       return res.status(404).json({
         status: "error",
         message: "User not found",
@@ -342,22 +461,19 @@ export const getAllUserDetails = async (req, res) => {
 
     return res.status(200).json({
       status: "success",
-      message: "Detailed user profile fetched successfully",
+      message: "User full details fetched successfully",
       user: rows[0],
     });
 
   } catch (error) {
-    console.error("Error fetching user details:", error);
+    console.error("Admin get user details error:", error);
     return res.status(500).json({
       status: "error",
-      message: "Failed to fetch detailed profiles",
+      message: "Failed to fetch user details",
       error: error.message,
     });
   }
 };
-
-
-
 
 
 
@@ -375,4 +491,8 @@ export const getAllUserDetails = async (req, res) => {
 
 // // await pool.query('INSERT INTO admins (full_name, email, password, role) VALUES ($1, $2, $3, $4)',values);
 // // }
+
+
+
+
 
