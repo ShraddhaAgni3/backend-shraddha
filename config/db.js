@@ -241,6 +241,7 @@ export const getRecentChats = async (myUserId) => {
       u.id AS user_id,
       INITCAP(SPLIT_PART(u.email, '@', 1)) AS name,
       u.email,
+      p.image_url AS profile_picture_url,
 
       lm.content AS last_message,
       lm.created_at AS last_message_time,
@@ -249,7 +250,7 @@ export const getRecentChats = async (myUserId) => {
 
     FROM chat_partners cp
     JOIN users u ON u.id = cp.user_id
-
+    LEFT JOIN profiles p ON p.user_id = u.id
     LEFT JOIN last_messages lm 
       ON lm.rn = 1 
      AND (
