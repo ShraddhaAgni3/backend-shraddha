@@ -489,6 +489,11 @@ export const getAllMessages = async (req, res) => {
     const savedMessage = rows[0];
 /* ⭐ SHRADDHA NEW CODE START — INCREMENT MESSAGE COUNT */
     // ➕ INCREMENT MESSAGE COUNT (ONLY LIMITED PLANS)
+    const queryToGetSenderName = `SELECT first_name,last_name FROM profiles WHERE user_id = $1`;
+    const senderNameResult = await pool.query(queryToGetSenderName, [
+      sender_id,
+    ]);
+    const senderFullName = `${senderNameResult.rows[0].first_name} ${senderNameResult.rows[0].last_name}`;
     if (people_message_limit !== -1) {
       await pool.query(
         `
@@ -512,7 +517,7 @@ export const getAllMessages = async (req, res) => {
       [
         receiver_id,
         "New Message 💬",
-        "You received a new message",
+        `${senderFullName} sent you a new message`,
         "Message",
       ]
     );
@@ -545,9 +550,46 @@ export const addReaction = async (req, res) => {
       `,
       [message_id, user_id, emoji]
     );
+     
+    const reaction = rows[0];
+    const messageResult = await pool.query(
+      `SELECT sender_id, receiver_id FROM messages WHERE id = $1`,
+      [message_id]
+    );
+    if (messageResult.rows.length === 0) {
+      return res.status(404).json({ error: "Message not found" });
+    }
+    const message = messageResult.rows[0];
+    const reactionReceiverId =
+      message.sender_id === user_id ? message.receiver_id : message.sender_id;
 
-    io.emit("new_reaction", rows[0]);
-    return res.json({ success: true, reaction: rows[0] });
+    const userResult = await pool.query(
+      `SELECT first_name, last_name FROM profiles WHERE user_id = $1`,
+      [user_id]
+    );
+    const senderFullName = userResult.rows.length
+      ? `${userResult.rows[0].first_name} ${userResult.rows[0].last_name}`
+      : `User ${user_id}`;
+      const notificationMessage = `${senderFullName} reacted with "${emoji}" on your message.`;
+    // Create notification
+    await createNotification(
+      reactionReceiverId,
+      "New Reaction 💬",
+      notificationMessage,
+      "reaction"
+    );
+    
+    const socketId = onlineUsers.get(reactionReceiverId);
+    if (socketId) {
+      io.to(socketId).emit("new_notification", {
+        title: "New Reaction 💬",
+        message: notificationMessage,
+        reaction,
+      });
+    }
+
+    io.emit("new_reaction", reaction);
+    return res.json({ success: true, reaction });
   } catch (error) {
     console.error("❌ Reaction error:", error.message);
     return res.status(500).json({ error: "Failed to save reaction" });
