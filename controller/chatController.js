@@ -93,8 +93,8 @@
 //     await pool.query(
 //       `UPDATE messages
 //        SET is_read = TRUE
-//        WHERE receiver_id = $1 
-//          AND sender_id = $2 
+//        WHERE receiver_id = $1
+//          AND sender_id = $2
 //          AND is_read = FALSE`,
 //       [myUserId, userId],
 //     );
@@ -140,7 +140,7 @@
 //     // ✅ 3️⃣ Emit new message to all connected sockets (real-time chat)
 //     io.emit("new_message", savedMessage);
 //     // ✅ Send message ONLY to sender & receiver
-    
+
 //      // ✅ 4️⃣ If receiver is online, send real-time message notification
 //     const receiverSocketId = onlineUsers.get(receiver_id);
 //     if (receiverSocketId) {
@@ -227,7 +227,6 @@
 //       "reaction",
 //     );
 
-
 //     // 4️⃣ Send real-time notification if receiver online
 //     const socketId = onlineUsers.get(receiverId);
 //     if (socketId) {
@@ -236,7 +235,7 @@
 //         message: notificationMessage,
 //         reaction,
 //       });
-        
+
 //       // optional: also send reaction update
 //       io.to(socketId).emit("new_reaction", reaction);
 //     }
@@ -325,18 +324,14 @@
 //   }
 // };
 
-
-
-
-
-
-
-
 import dotenv from "dotenv";
 import { v4 as uuidv4 } from "uuid";
 import { io, onlineUsers } from "../server.js";
 import { pool } from "../config/db.js";
-import { searchUsers, getRecentChats as dbGetRecentChats } from "../config/db.js";
+import {
+  searchUsers,
+  getRecentChats as dbGetRecentChats,
+} from "../config/db.js";
 import cloudinary from "../config/cloudinaryConfig.js";
 import { createNotification } from "./notificationController.js";
 
@@ -370,7 +365,7 @@ export const uploadFile = async (req, res) => {
           message: "File uploaded successfully",
           url: uploadResult.secure_url,
         });
-      }
+      },
     );
 
     stream.end(req.file.buffer);
@@ -394,7 +389,52 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-// ---------------- Get Messages ----------------
+// // ---------------- Get Messages ----------------
+// export const getMessagesForUser = async (req, res) => {
+//   try {
+//     const { userId } = req.params;
+//     const { myUserId } = req.query;
+
+//     if (!userId || !myUserId) {
+//       return res.status(400).json({ error: "Missing userId or myUserId" });
+//     }
+
+//     const { rows } = await pool.query(
+//       `
+//       SELECT
+//   m.sender_id,
+//   m.receiver_id,
+//   m.content,
+//   sender.profile_picture_url AS sender_profile_picture_url,
+//   receiver.profile_picture_url AS receiver_profile_picture_url
+// FROM messages m
+// JOIN users sender ON sender.id = m.sender_id
+// JOIN users receiver ON receiver.id = m.receiver_id
+// WHERE (m.sender_id = $1 AND m.receiver_id = $2)
+//    OR (m.sender_id = $2 AND m.receiver_id = $1)
+// ORDER BY m.created_at ASC;
+
+//       `,
+//       [myUserId, userId],
+//     );
+
+//     await pool.query(
+//       `
+//       UPDATE messages
+//       SET is_read = TRUE
+//       WHERE receiver_id = $1 AND sender_id = $2 AND is_read = FALSE
+//       `,
+//       [myUserId, userId],
+//     );
+
+//     return res.status(200).json(rows);
+//   } catch (error) {
+//     console.error("Error fetching messages:", error.message);
+//     return res.status(500).json({ error: "Failed to fetch messages" });
+//   }
+// };
+
+
 export const getMessagesForUser = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -406,10 +446,30 @@ export const getMessagesForUser = async (req, res) => {
 
     const { rows } = await pool.query(
       `
-      SELECT * FROM messages
-      WHERE (sender_id = $1 AND receiver_id = $2)
-         OR (sender_id = $2 AND receiver_id = $1)
-      ORDER BY created_at ASC
+      SELECT
+        m.id,
+        m.sender_id,
+        m.receiver_id,
+        m.content,
+        m.attachment_url,
+        m.created_at,
+        m.is_read,
+
+        sender_profile.image_url   AS sender_profile_image_url,
+        receiver_profile.image_url AS receiver_profile_image_url
+
+      FROM messages m
+
+      LEFT JOIN profiles sender_profile
+        ON sender_profile.user_id = m.sender_id
+
+      LEFT JOIN profiles receiver_profile
+        ON receiver_profile.user_id = m.receiver_id
+
+      WHERE (m.sender_id = $1 AND m.receiver_id = $2)
+         OR (m.sender_id = $2 AND m.receiver_id = $1)
+
+      ORDER BY m.created_at ASC
       `,
       [myUserId, userId]
     );
@@ -418,7 +478,9 @@ export const getMessagesForUser = async (req, res) => {
       `
       UPDATE messages
       SET is_read = TRUE
-      WHERE receiver_id = $1 AND sender_id = $2 AND is_read = FALSE
+      WHERE receiver_id = $1
+        AND sender_id = $2
+        AND is_read = FALSE
       `,
       [myUserId, userId]
     );
@@ -429,6 +491,8 @@ export const getMessagesForUser = async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch messages" });
   }
 };
+
+
 //shraddha new code//
 // ---------------- SEND MESSAGE (WITH LIMIT CHECK) ----------------
 export const getAllMessages = async (req, res) => {
@@ -453,7 +517,7 @@ export const getAllMessages = async (req, res) => {
         AND up.status = 'active'
         AND up.expires_at > NOW()
       `,
-      [sender_id]
+      [sender_id],
     );
 
     if (planResult.rows.length === 0) {
@@ -483,11 +547,11 @@ export const getAllMessages = async (req, res) => {
       VALUES ($1, $2, $3, $4, FALSE)
       RETURNING *
       `,
-      [sender_id, receiver_id, content, attachment_url]
+      [sender_id, receiver_id, content, attachment_url],
     );
 
     const savedMessage = rows[0];
-/* ⭐ SHRADDHA NEW CODE START — INCREMENT MESSAGE COUNT */
+    /* ⭐ SHRADDHA NEW CODE START — INCREMENT MESSAGE COUNT */
     // ➕ INCREMENT MESSAGE COUNT (ONLY LIMITED PLANS)
     const queryToGetSenderName = `SELECT first_name,last_name FROM profiles WHERE user_id = $1`;
     const senderNameResult = await pool.query(queryToGetSenderName, [
@@ -501,10 +565,10 @@ export const getAllMessages = async (req, res) => {
         SET people_message_used = people_message_used + 1
         WHERE user_id = $1 AND status = 'active'
         `,
-        [sender_id]
+        [sender_id],
       );
     }
-/* ⭐ SHRADDHA NEW CODE END */
+    /* ⭐ SHRADDHA NEW CODE END */
     // 🔔 SOCKET EVENT
     io.emit("new_message", savedMessage);
 
@@ -519,7 +583,7 @@ export const getAllMessages = async (req, res) => {
         "New Message 💬",
         `${senderFullName} sent you a new message`,
         "Message",
-      ]
+      ],
     );
 
     return res.status(201).json(savedMessage);
@@ -548,13 +612,13 @@ export const addReaction = async (req, res) => {
       DO UPDATE SET emoji = EXCLUDED.emoji
       RETURNING *
       `,
-      [message_id, user_id, emoji]
+      [message_id, user_id, emoji],
     );
-     
+
     const reaction = rows[0];
     const messageResult = await pool.query(
       `SELECT sender_id, receiver_id FROM messages WHERE id = $1`,
-      [message_id]
+      [message_id],
     );
     if (messageResult.rows.length === 0) {
       return res.status(404).json({ error: "Message not found" });
@@ -565,20 +629,20 @@ export const addReaction = async (req, res) => {
 
     const userResult = await pool.query(
       `SELECT first_name, last_name FROM profiles WHERE user_id = $1`,
-      [user_id]
+      [user_id],
     );
     const senderFullName = userResult.rows.length
       ? `${userResult.rows[0].first_name} ${userResult.rows[0].last_name}`
       : `User ${user_id}`;
-      const notificationMessage = `${senderFullName} reacted with "${emoji}" on your message.`;
+    const notificationMessage = `${senderFullName} reacted with "${emoji}" on your message.`;
     // Create notification
     await createNotification(
       reactionReceiverId,
       "New Reaction 💬",
       notificationMessage,
-      "reaction"
+      "reaction",
     );
-    
+
     const socketId = onlineUsers.get(reactionReceiverId);
     if (socketId) {
       io.to(socketId).emit("new_notification", {
@@ -600,7 +664,7 @@ export const addReaction = async (req, res) => {
 export const getAllReactions = async (req, res) => {
   try {
     const { rows } = await pool.query(
-      "SELECT * FROM reactions ORDER BY created_at DESC"
+      "SELECT * FROM reactions ORDER BY created_at DESC",
     );
     return res.json(rows);
   } catch (error) {
@@ -635,10 +699,9 @@ export const deleteMessage = async (req, res) => {
       return res.status(400).json({ error: "Missing messageId or userId" });
     }
 
-    const msg = await pool.query(
-      "SELECT * FROM messages WHERE id = $1",
-      [messageId]
-    );
+    const msg = await pool.query("SELECT * FROM messages WHERE id = $1", [
+      messageId,
+    ]);
 
     if (!msg.rows.length) {
       return res.status(404).json({ error: "Message not found" });
