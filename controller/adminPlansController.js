@@ -18,7 +18,7 @@ export const togglePlanStatus = async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ error: "Not found" });
     const newStatus = rows[0].is_active === 1 ? 0 : 1;
     await pool.query("UPDATE plans SET is_active = $1 WHERE id = $2", [newStatus, planId]);
-    res.json({ success: true, newStatus });
+    res.json({ success: true, is_active: newStatus });
 };
 
 // ---------------------- Get Plan By ID ----------------------
@@ -111,14 +111,15 @@ export const updatePlan = async (req, res) => {
             audio_call_limit,
             type,
             description,
+            billing_info,
         } = req.body;
 
         const q = `
       UPDATE plans
       SET name=$1, price=$2, duration=$3, video_call_limit=$4,
           people_search_limit=$5, people_message_limit=$6,
-          audio_call_limit=$7, type=$8, description=$9
-      WHERE id=$10;
+          audio_call_limit=$7, type=$8, description=$9, billing_info=$10
+      WHERE id=$11;
     `;
 
         await pool.query(q, [
@@ -131,6 +132,7 @@ export const updatePlan = async (req, res) => {
             audio_call_limit,
             type,
             description,
+            billing_info,
             id,
         ]);
 
