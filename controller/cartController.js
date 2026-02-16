@@ -2,7 +2,7 @@ import { pool } from "../config/db.js";
 
 export const getCartItems = async (req, res) => {
     try {
-        const { user_id } = req.params;
+        const user_id = req.user.id;
 
         const q = `
       SELECT 
@@ -38,7 +38,8 @@ export const getCartItems = async (req, res) => {
 // ---------------------- Add Item to Cart ----------------------
 export const addToCart = async (req, res) => {
     try {
-        const { plan_id, user_id = 1 } = req.body;
+        const { plan_id } = req.body;
+        const user_id = req.user.id // ⚡ logged-in user ka ID (abhi ke liye static 1)
 
         if (!plan_id || !user_id) {
             return res.status(400).json({ message: "Missing plan_id or user_id" });
@@ -70,7 +71,7 @@ export const addToCart = async (req, res) => {
 export const deleteCartItem = async (req, res) => { 
     try {
         const { id } = req.params;
-        const user_id = req.user?.id || 1; // ⚡ logged-in user ka ID (abhi ke liye static 1)
+        const user_id = req.user.id // ⚡ logged-in user ka ID (abhi ke liye static 1)
 
         // 🧠 First check if item belongs to the logged-in user
         const checkQuery = `SELECT * FROM cart WHERE id = $1 AND user_id = $2;`;

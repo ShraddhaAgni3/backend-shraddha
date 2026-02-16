@@ -521,7 +521,8 @@ if (
       }
     }
 
-    queryStr += ` ORDER BY pr.user_id LIMIT 200`;
+    //queryStr += ` ORDER BY pr.user_id LIMIT 200`;
+    queryStr += ` ORDER BY pr.user_id`;
 
     const { rows } = await pool.query(queryStr, params);
 
