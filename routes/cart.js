@@ -3,7 +3,7 @@ import {getCartItems, addToCart, deleteCartItem} from  "../controller/cartContro
 import { validateAccessToken } from "../middleware/verfiytoken.js";
 const router = express.Router();
 
-router.get("/",validateAccessToken, getCartItems);  // Get Cart Items by User ID
+router.get("/:user_id",validateAccessToken, getCartItems);  // Get Cart Items by User ID
 router.post("/",validateAccessToken, addToCart); // Add Item to Cart
 router.delete("/:id", validateAccessToken,deleteCartItem); // Delete Cart Item by ID
 
