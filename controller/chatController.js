@@ -664,7 +664,7 @@ export const addReaction = async (req, res) => {
 export const getAllReactions = async (req, res) => {
   try {
     const { rows } = await pool.query(
-      "SELECT * FROM reactions ORDER BY created_at DESC",
+      "SELECT * FROM reactions ORDER BY timestamp DESC",
     );
     return res.json(rows);
   } catch (error) {
