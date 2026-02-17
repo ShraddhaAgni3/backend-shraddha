@@ -47,63 +47,6 @@ export const updateMemberApproval = async (req, res) => {
   }
 };
 
-// export const updateMemberApproval = async (req, res) => {
-//   try {
-//     const updates = req.body;
-
-//     const allowedKeys = [
-//       "member_approval",
-//       "check_video_call_limit",
-//       "check_audio_call_limit",
-//       "check_search_limit",
-//       "check_message_limit",
-//     ];
-
-//     const fields = [];
-//     const values = [];
-//     let index = 1;
-
-//     for (const key in updates) {
-//       if (!allowedKeys.includes(key)) {
-//         return res.status(400).json({ message: `Invalid key: ${key}` });
-//       }
-
-//       if (updates[key] !== 0 && updates[key] !== 1) {
-//         return res
-//           .status(400)
-//           .json({ message: `Invalid value for ${key}` });
-//       }
-
-//       fields.push(`${key} = $${index}`);
-//       values.push(updates[key]);
-//       index++;
-//     }
-
-//     if (fields.length === 0) {
-//       return res.status(400).json({ message: "No valid fields to update" });
-//     }
-
-//     const query = `
-//       UPDATE configurations
-//       SET ${fields.join(", ")}
-//       WHERE id = 1
-//       RETURNING *
-//     `;
-
-//     const result = await pool.query(query, values);
-
-//     res.json({
-//       success: true,
-//       message: "Setting updated successfully",
-//       data: result.rows[0],
-//     });
-//   } catch (error) {
-//     console.error("Update setting error:", error);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// };
-
-
 // 🔹 Get member approval setting
 export const getMemberApproval = async (req, res) => {
   try {

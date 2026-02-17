@@ -146,28 +146,6 @@ export const registerUser = async (req, res) => {
       profile_info: profileResult.rows[0], // ✅ Automatically includes first_name, last_name
     };
 
-    // 🔹 Create payload for tokens - UPDATED
-    // const payload = {
-    //   user_id,
-    //   email: user.email,
-    //   first_name: profileResult.rows[0].first_name, // ✅ Changed
-    //   last_name: profileResult.rows[0].last_name, // ✅ New
-    //   profession: profileResult.rows[0].profession,
-    //   username: profileResult.rows[0].username,
-    //   about_me: profileResult.rows[0].about_me,
-    //   status: user.status,
-    // };
-
-    // const access_secret_key = process.env.ACCESS_SECRET_KEY;
-    // const refresh_secret_key = process.env.REFRESH_SECRET_KEY;
-
-    // const accessToken = jwt.sign(payload, access_secret_key, {
-    //   expiresIn: "15m",
-    // });
-    // const refreshToken = jwt.sign(payload, refresh_secret_key, {
-    //   expiresIn: "7d",
-    // });
-
     // 🔹 Send user notification
     await sendNotification(
       user_id,
