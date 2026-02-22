@@ -66,7 +66,7 @@ app.use(express.urlencoded({ extended: true }));
 //app.use("/uploads", express.static("uploads"));
 
 app.use(cors({
-     origin: ['http://localhost:5173', 'https://backend-shraddha.onrender.com', 'https://frontend-shraddha.onrender.com'],
+    origin: ['http://localhost:5173', 'https://backend-shraddha.onrender.com', 'https://frontend-shraddha.onrender.com'],
     credentials: true
 }));
 
@@ -83,19 +83,130 @@ const io = new Server(server, {
    transports: ["websocket", "polling"],
 });
   console.log("✅ Socket connected");
-//  Track online users (userId → socketId)
+// Track online users
 const onlineUsers = new Map();
-
+const activeCalls = new Map();
+// key: callerId
+// value: { to, answered: false, timeout }
 io.on("connection", (socket) => {
-  console.log(" User connected:", socket.id);
+  console.log("User connected:", socket.id);
 
-  // When frontend registers userId with socket
+  // REGISTER USER
   socket.on("register_user", (userId) => {
-    onlineUsers.set(userId, socket.id);
-    console.log(` User ${userId} registered for notifications`);
+    onlineUsers.set(userId.toString(), socket.id);
+    console.log("User registered:", userId);
   });
-   //console.log('Socket connected', socket.id);
+// ====== SHRADDHA CODE STARTED ======
+  // CALL USER
+ socket.on("call-user", async (data) => {
+  if (!data?.to) return;
 
+  const callerId = data.from.toString();
+  const receiverId = data.to.toString();
+
+  const targetSocket = onlineUsers.get(receiverId);
+
+  // Save call state
+  const timeout = setTimeout(async () => {
+    const call = activeCalls.get(callerId);
+
+    if (call && !call.answered) {
+      // MISSED CALL for receiver
+      await sendNotification(
+        receiverId,
+        "Missed Call",
+        `Missed call from User ${callerId}`
+      );
+
+      // OUTGOING CALL for caller
+      await sendNotification(
+        callerId,
+        "Outgoing call",
+        `Outgoing call to User ${receiverId}`
+      );
+
+      activeCalls.delete(callerId);
+    }
+  }, 20000); // 20 seconds ring time
+
+  activeCalls.set(callerId, {
+    to: receiverId,
+    answered: false,
+    timeout
+  });
+
+  // Incoming call notification
+  await sendNotification(
+    receiverId,
+    "Incoming Call",
+    `Incoming call from User ${callerId}`
+  );
+
+  if (targetSocket) {
+    io.to(targetSocket).emit("incoming-call", {
+      offer: data.offer,
+      from: callerId,
+      callType: data.callType
+    });
+  }
+});
+
+  // ANSWER CALL
+socket.on("answer-call", (data) => {
+  const callerId = data.to.toString(); // this is caller
+  const callData = activeCalls.get(callerId);
+
+  if (callData) {
+    callData.answered = true;
+    clearTimeout(callData.timeout);
+    activeCalls.delete(callerId);
+  }
+
+  const callerSocket = onlineUsers.get(callerId);
+
+  if (callerSocket) {
+    io.to(callerSocket).emit("call-answered", {
+      answer: data.answer
+    });
+  }
+});
+
+  // ICE CANDIDATE
+  socket.on("ice-candidate", (data) => {
+   if (!data?.to) {
+  console.log("❌ Missing target user in socket event:", data);
+  return;
+}
+
+const targetSocket = onlineUsers.get(data.to.toString());
+
+    if (targetSocket) {
+      io.to(targetSocket).emit("ice-candidate", data.candidate);
+    }
+  });
+
+  // END CALL
+  socket.on("end-call", async (data) => {
+  if (!data?.to) return;
+
+  const receiverId = data.to.toString();
+  const targetSocket = onlineUsers.get(receiverId);
+
+  if (targetSocket) {
+    io.to(targetSocket).emit("call-ended");
+  }
+
+  // Clear active call
+  for (const [callerId, callData] of activeCalls.entries()) {
+    if (callData.to === receiverId) {
+      clearTimeout(callData.timeout);
+      activeCalls.delete(callerId);
+      break;
+    }
+  }
+});
+// ====== SHRADDHA CODE end ======
+  // DISCONNECT
   socket.on("disconnect", () => {
     for (const [userId, socketId] of onlineUsers.entries()) {
       if (socketId === socket.id) {
@@ -103,9 +214,10 @@ io.on("connection", (socket) => {
         break;
       }
     }
-    console.log(" User disconnected:", socket.id);
+    console.log("User disconnected:", socket.id);
   });
 });
+
 
 //  Function to send notification
 export const sendNotification = async (userId, title, message,) => {
