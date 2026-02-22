@@ -66,7 +66,7 @@ app.use(express.urlencoded({ extended: true }));
 //app.use("/uploads", express.static("uploads"));
 
 app.use(cors({
-    origin: ['http://localhost:5173', 'https://intentionalconnections.app', 'https://frontend1-7fsg.onrender.com/'],
+     origin: ['http://localhost:5173', 'https://backend-shraddha.onrender.com', 'https://frontend-shraddha.onrender.com'],
     credentials: true
 }));
 
