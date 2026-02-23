@@ -6,7 +6,7 @@ import http from "http";
 import { Server } from "socket.io";
 import { pool } from "./config/db.js"; // ✅ Use your existing DB connection
 import bodyParser from 'body-parser';
-
+import twilio from "twilio";
 // ✅ Import routes
 import authRoutes from "./routes/authRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
@@ -46,7 +46,10 @@ import adminReportRoutes from "./routes/adminreportRoutes.js";
 
 import linkedinRoutes from './routes/linkedinRoutes.js';
 dotenv.config();
-
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
 const app = express();
 testConnection();
 
@@ -288,6 +291,19 @@ app.use('/api/linkedin', linkedinRoutes);
 
 
 //app.use(express.urlencoded({ extended: true })); 
+app.get("/api/turn-credentials", async (req, res) => {
+  try {
+    const token = await twilioClient.tokens.create();
+
+    res.json({
+      iceServers: token.iceServers
+    });
+
+  } catch (error) {
+    console.error("Twilio TURN error:", error);
+    res.status(500).json({ error: "Failed to generate TURN credentials" });
+  }
+});
 const port = process.env.PORT || 3435;
 server.listen(port, () => console.log(`🚀 Server running on localhost:${port}`));
 
