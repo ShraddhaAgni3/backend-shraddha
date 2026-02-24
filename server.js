@@ -95,10 +95,10 @@ io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
   // REGISTER USER
-  socket.on("register_user", (userId) => {
-    onlineUsers.set(userId.toString(), socket.id);
-    console.log("User registered:", userId);
-  });
+ socket.on("register_user", (userId) => {
+  onlineUsers.set(userId.toString(), socket);
+  console.log("User registered:", userId, "Socket:", socket.id);
+});
 // ====== SHRADDHA CODE STARTED ======
   // CALL USER
  socket.on("call-user", async (data) => {
@@ -145,14 +145,15 @@ io.on("connection", (socket) => {
     `Incoming call from User ${callerId}`
   );
 
-  if (targetSocket) {
-    io.to(targetSocket).emit("incoming-call", {
-      offer: data.offer,
-      from: callerId,
-      callType: data.callType
-    });
-  }
-});
+  const targetSocket = onlineUsers.get(receiverId);
+
+if (targetSocket) {
+  targetSocket.emit("incoming-call", {
+    offer: data.offer,
+    from: callerId,
+    callType: data.callType
+  });
+}
 
   // ANSWER CALL
 socket.on("answer-call", (data) => {
@@ -167,12 +168,11 @@ socket.on("answer-call", (data) => {
 
   const callerSocket = onlineUsers.get(callerId);
 
-  if (callerSocket) {
-    io.to(callerSocket).emit("call-answered", {
-      answer: data.answer
-    });
-  }
-});
+if (callerSocket) {
+  callerSocket.emit("call-answered", {
+    answer: data.answer
+  });
+}
 
   // ICE CANDIDATE
   socket.on("ice-candidate", (data) => {
@@ -183,24 +183,22 @@ socket.on("answer-call", (data) => {
 
 const targetSocket = onlineUsers.get(data.to.toString());
 
-    if (targetSocket) {
-      io.to(targetSocket).emit("ice-candidate", {
-  candidate: data.candidate
-});
-    }
+if (targetSocket) {
+  targetSocket.emit("ice-candidate", {
+    candidate: data.candidate
   });
+}
 
   // END CALL
   socket.on("end-call", async (data) => {
   if (!data?.to) return;
 
   const receiverId = data.to.toString();
-  const targetSocket = onlineUsers.get(receiverId);
+ const targetSocket = onlineUsers.get(receiverId);
 
-  if (targetSocket) {
-    io.to(targetSocket).emit("call-ended");
-  }
-
+if (targetSocket) {
+  targetSocket.emit("call-ended");
+}
   // Clear active call
   for (const [callerId, callData] of activeCalls.entries()) {
     if (callData.to === receiverId) {
@@ -213,12 +211,12 @@ const targetSocket = onlineUsers.get(data.to.toString());
 // ====== SHRADDHA CODE end ======
   // DISCONNECT
   socket.on("disconnect", () => {
-    for (const [userId, socketId] of onlineUsers.entries()) {
-      if (socketId === socket.id) {
-        onlineUsers.delete(userId);
-        break;
-      }
-    }
+    for (const [userId, userSocket] of onlineUsers.entries()) {
+  if (userSocket.id === socket.id) {
+    onlineUsers.delete(userId);
+    break;
+  }
+}
     console.log("User disconnected:", socket.id);
   });
 });
