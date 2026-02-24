@@ -184,7 +184,9 @@ socket.on("answer-call", (data) => {
 const targetSocket = onlineUsers.get(data.to.toString());
 
     if (targetSocket) {
-      io.to(targetSocket).emit("ice-candidate", data.candidate);
+      io.to(targetSocket).emit("ice-candidate", {
+  candidate: data.candidate
+});
     }
   });
 
