@@ -128,6 +128,11 @@ socket.on("call-user", (data) => {
       callType: data.callType
     });
   }
+  if (!targetSocket) {
+  io.to(socket.id).emit("call-failed", {
+    message: "User is offline"
+  });
+}
 });
 
 
