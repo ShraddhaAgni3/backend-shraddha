@@ -88,7 +88,7 @@ const io = new Server(server, {
   console.log("✅ Socket connected");
 // Track online users
 const onlineUsers = new Map();
-const activeCalls = new Map();
+
 // key: callerId
 // value: { to, answered: false, timeout }
 io.on("connection", (socket) => {
@@ -96,72 +96,69 @@ io.on("connection", (socket) => {
 
   // REGISTER USER
  socket.on("register_user", (userId) => {
-  onlineUsers.set(userId.toString(), socket);
-  console.log("User registered:", userId, "Socket:", socket.id);
+  if (!userId) return;
+
+  socket.userId = userId.toString();   //shraddha
+  onlineUsers.set(socket.userId, socket);
+
+  console.log("User registered:", socket.userId, "Socket:", socket.id);
 });
 // ====== SHRADDHA CODE STARTED ======
-socket.on("call-user", (data) => {
-    if (!data?.to) return;
+ socket.on("call-user", ({ to, from, offer, callType }) => {
+    if (!to || !from || !offer) return;
 
-    const callerId = data.from.toString();
-    const receiverId = data.to.toString();
-
-    const receiverSocket = onlineUsers.get(receiverId);
+    const receiverSocket = onlineUsers.get(to.toString());
 
     if (receiverSocket) {
       receiverSocket.emit("incoming-call", {
-        offer: data.offer,
-        from: callerId,
-        callType: data.callType,
+        from: from.toString(),
+        offer,
+        callType,
       });
     }
   });
 
-  // ================= ANSWER CALL =================
-  socket.on("answer-call", (data) => {
-    const callerId = data.to.toString();
-    const callerSocket = onlineUsers.get(callerId);
+  /* ===== ANSWER CALL ===== */
+  socket.on("answer-call", ({ to, answer }) => {
+    if (!to || !answer) return;
+
+    const callerSocket = onlineUsers.get(to.toString());
 
     if (callerSocket) {
-      callerSocket.emit("call-answered", {
-        answer: data.answer,
-      });
+      callerSocket.emit("call-answered", { answer });
     }
   });
 
-  // ================= ICE CANDIDATE =================
-  socket.on("ice-candidate", (data) => {
-    if (!data?.to) return;
+  /* ===== ICE CANDIDATE ===== */
+  socket.on("ice-candidate", ({ to, candidate }) => {
+    if (!to || !candidate) return;
 
-    const targetSocket = onlineUsers.get(data.to.toString());
+    const targetSocket = onlineUsers.get(to.toString());
 
     if (targetSocket) {
-      targetSocket.emit("ice-candidate", {
-        candidate: data.candidate,
-      });
+      targetSocket.emit("ice-candidate", { candidate });
     }
   });
 
-  // ================= END CALL =================
-  socket.on("end-call", (data) => {
-    if (!data?.to) return;
+  /* ===== END CALL ===== */
+  socket.on("end-call", ({ to }) => {
+    if (!to) return;
 
-    const receiverSocket = onlineUsers.get(data.to.toString());
+    const targetSocket = onlineUsers.get(to.toString());
 
-    if (receiverSocket) {
-      receiverSocket.emit("call-ended");
+    if (targetSocket) {
+      targetSocket.emit("call-ended");
     }
   });
 
-  // ================= DISCONNECT =================
+  /* ===== DISCONNECT ===== */
   socket.on("disconnect", () => {
-    for (const [userId, userSocket] of onlineUsers.entries()) {
-      if (userSocket.id === socket.id) {
-        onlineUsers.delete(userId);
-        break;
-      }
+    if (socket.userId) {
+      onlineUsers.delete(socket.userId);
+      console.log(`🔴 User disconnected: ${socket.userId}`);
+    } else {
+      console.log("🔴 Socket disconnected:", socket.id);
     }
-    console.log("User disconnected:", socket.id);
   });
 });
 
