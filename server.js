@@ -91,6 +91,41 @@ const rooms = {}; // roomId → Set<socketId>
 io.on("connection", (socket) => {
   console.log("🟢 User connected:", socket.id);
 
+  // ── 5. Direct call signalling (userId-to-userId) ──────────────────────
+  socket.on("call-user", ({ targetUserId, offer, callType, from }) => {
+    const targetSocketId = onlineUsers.get(String(targetUserId));
+    if (!targetSocketId) {
+      socket.emit("call-failed", { reason: "User is offline" });
+      return;
+    }
+    io.to(targetSocketId).emit("incoming-call", {
+      offer,
+      from,
+      callType,
+      roomId: `call_${[from, targetUserId].sort().join("_")}`,
+    });
+  });
+
+  socket.on("call-accepted", ({ roomId, answer, to }) => {
+    const targetSocketId = onlineUsers.get(String(to));
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("call-accepted", { answer, roomId });
+    }
+  });
+
+  socket.on("call-rejected", ({ to }) => {
+    const targetSocketId = onlineUsers.get(String(to));
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("call-rejected");
+    }
+  });
+
+  socket.on("call-ended", ({ to }) => {
+    const targetSocketId = onlineUsers.get(String(to));
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("call-ended");
+    }
+  });
   // ── 1. Track online users by their app userId ──────────────────────────
   socket.on("register_user", (userId) => {
     if (!userId) return;
