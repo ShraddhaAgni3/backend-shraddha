@@ -71,137 +71,92 @@ app.use(cors({
 }));
 
 
-
-//  Create HTTP + Socket.IO server
 const server = http.createServer(app);
-const io = new Server(server, {
+
+export const onlineUsers = new Map();
+
+export const io = new Server(server, {
   cors: {
-    origin:"*", 
+    origin: "*",
     methods: ["GET", "POST"],
-    credentials: true,
   },
-   transports: ["websocket", "polling"],
 });
-  console.log("✅ Socket connected");
-//  Track online users (userId → socketId)
-const onlineUsers = new Map();
-const activeCalls = new Map();
-// key: callerId
-// value: { to, answered: false, timeout }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WebRTC Signalling  (replace the existing io.on("connection") block in server.js)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const rooms = {}; // roomId → Set<socketId>
+
 io.on("connection", (socket) => {
-  console.log(" User connected:", socket.id);
+  console.log("🟢 User connected:", socket.id);
 
-  // When frontend registers userId with socket
+  // ── 1. Track online users by their app userId ──────────────────────────
   socket.on("register_user", (userId) => {
-    onlineUsers.set(userId, socket.id);
-    console.log(` User ${userId} registered for notifications`);
+    if (!userId) return;
+    onlineUsers.set(String(userId), socket.id);
+    socket.userId = String(userId);          // attach to socket for cleanup
+    console.log(`📌 Registered user ${userId} → socket ${socket.id}`);
   });
-   //console.log('Socket connected', socket.id);
-// ================= CALL USER =================
-socket.on("call-user", (data) => {
-  if (!data?.to || !data?.from) return;
 
-  const callerId = data.from.toString();
-  const receiverId = data.to.toString();
+  // ── 2. Join a call room (max 2 peers) ─────────────────────────────────
+  socket.on("join-room", (roomId) => {
+    if (!roomId) return;
 
-  const targetSocket = onlineUsers.get(receiverId);
+    if (!rooms[roomId]) rooms[roomId] = new Set();
 
-  // Save call state
-  const timeout = setTimeout(() => {
-    const call = activeCalls.get(callerId);
-    if (call && !call.answered) {
-      activeCalls.delete(callerId);
-      console.log("⏳ Call timeout:", callerId);
+    if (rooms[roomId].size >= 2) {
+      socket.emit("room-full");
+      return;
     }
-  }, 20000); // 20 sec ring
 
-  activeCalls.set(callerId, {
-    to: receiverId,
-    answered: false,
-    timeout
-  });
+    rooms[roomId].add(socket.id);
+    socket.join(roomId);
+    socket.currentRoom = roomId;   // store for disconnect cleanup
 
-  if (targetSocket) {
-    io.to(targetSocket).emit("incoming-call", {
-      offer: data.offer,
-      from: callerId,
-      callType: data.callType
-    });
-  }
-  if (!targetSocket) {
-  io.to(socket.id).emit("call-failed", {
-    message: "User is offline"
-  });
-}
-});
-
-
-// ================= ANSWER CALL =================
-socket.on("answer-call", (data) => {
-  const callerId = data.to.toString();
-  const callData = activeCalls.get(callerId);
-
-  if (callData) {
-    callData.answered = true;
-    clearTimeout(callData.timeout);
-    activeCalls.delete(callerId);
-  }
-
-  const callerSocket = onlineUsers.get(callerId);
-
-  if (callerSocket) {
-    io.to(callerSocket).emit("call-answered", {
-      answer: data.answer
-    });
-  }
-});
-
-
-// ================= ICE CANDIDATE =================
-socket.on("ice-candidate", (data) => {
-  if (!data?.to || !data?.candidate) return;
-
-  const targetSocket = onlineUsers.get(data.to.toString());
-
-  if (targetSocket) {
-    io.to(targetSocket).emit("ice-candidate", {
-      candidate: data.candidate
-    });
-  }
-});
-
-
-// ================= END CALL =================
-socket.on("end-call", (data) => {
-  if (!data?.to) return;
-
-  const receiverId = data.to.toString();
-  const targetSocket = onlineUsers.get(receiverId);
-
-  if (targetSocket) {
-    io.to(targetSocket).emit("call-ended");
-  }
-
-  // Cleanup active call
-  for (const [callerId, callData] of activeCalls.entries()) {
-    if (callData.to === receiverId) {
-      clearTimeout(callData.timeout);
-      activeCalls.delete(callerId);
-      break;
+    // Tell the *other* peer (if present) to start the offer flow
+    const others = [...rooms[roomId]].filter((id) => id !== socket.id);
+    if (others.length > 0) {
+      io.to(others[0]).emit("ready", socket.id);
     }
-  }
-});
+
+    console.log(`🚪 Room ${roomId}:`, [...rooms[roomId]]);
+  });
+
+  // ── 3. Forwarding: offer / answer / ice-candidate ──────────────────────
+  socket.on("offer", ({ roomId, offer }) => {
+    if (!roomId || !offer) return;
+    socket.to(roomId).emit("offer", offer);
+  });
+
+  socket.on("answer", ({ roomId, answer }) => {
+    if (!roomId || !answer) return;
+    socket.to(roomId).emit("answer", answer);
+  });
+
+  socket.on("ice-candidate", ({ roomId, candidate }) => {
+    if (!roomId || !candidate) return;
+    socket.to(roomId).emit("ice-candidate", { candidate });
+  });
+
+  // ── 4. Disconnect cleanup ──────────────────────────────────────────────
   socket.on("disconnect", () => {
-    for (const [userId, socketId] of onlineUsers.entries()) {
-      if (socketId === socket.id) {
-        onlineUsers.delete(userId);
-        break;
-      }
+    // Remove from online map
+    if (socket.userId) onlineUsers.delete(socket.userId);
+
+    // Notify room peers and clean up room
+    const roomId = socket.currentRoom;
+    if (roomId && rooms[roomId]) {
+      rooms[roomId].delete(socket.id);
+      socket.to(roomId).emit("user-left");
+
+      // Delete empty rooms
+      if (rooms[roomId].size === 0) delete rooms[roomId];
     }
-    console.log(" User disconnected:", socket.id);
+
+    console.log("🔴 Disconnected:", socket.id);
   });
 });
-
 //  Function to send notification
 export const sendNotification = async (userId, title, message,) => {
   try {
@@ -212,7 +167,7 @@ export const sendNotification = async (userId, title, message,) => {
     );
 
     // Send via Socket.IO if user is online
-    const socketId = onlineUsers.get(userId);
+    const socketId = onlineUsers.get(String(userId));
     if (socketId) {
       io.to(socketId).emit("new_notification", { title, message });
     }
@@ -222,6 +177,8 @@ export const sendNotification = async (userId, title, message,) => {
     console.error(" Error sending notification:", err);
   }
 };
+
+
 
 //  Existing routes — unchanged
 app.use("/", authRoutes);
@@ -274,4 +231,4 @@ app.use('/api/linkedin', linkedinRoutes);
 const port = process.env.PORT || 3435;
 server.listen(port, () => console.log(`🚀 Server running on localhost:${port}`));
 
-export { app, io, onlineUsers };
+export { app };
